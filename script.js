@@ -1142,47 +1142,58 @@ function getPinPosition(type, id, pinIdx) {
 
 // Pin hover detection bounds
 function getPinAtPosition(pos) {
-  const pinRadius = 8;
   const isFA = (state.sandbox.mission === 'fa');
+  let bestPin = null;
+  let bestDist = Infinity;
 
-  // Check global inputs
+  // 1. Check global inputs (larger tolerance since they are far apart)
   const inputs = isFA ? ['a', 'b', 'cin'] : ['a', 'b'];
   for (let inId of inputs) {
     const pinPos = getPinPosition('input_port', inId);
-    if (Math.hypot(pos.x - pinPos.x, pos.y - pinPos.y) <= pinRadius + 4) {
-      return { type: 'input_port', id: inId, pinIndex: 0, isOutput: true, x: pinPos.x, y: pinPos.y };
+    const dist = Math.hypot(pos.x - pinPos.x, pos.y - pinPos.y);
+    if (dist <= 26 && dist < bestDist) {
+      bestPin = { type: 'input_port', id: inId, pinIndex: 0, isOutput: true, x: pinPos.x, y: pinPos.y };
+      bestDist = dist;
     }
   }
 
-  // Check global outputs
+  // 2. Check global outputs
   const outputs = ['sum', 'carry'];
   for (let outId of outputs) {
     const pinPos = getPinPosition('output_port', outId);
-    if (Math.hypot(pos.x - pinPos.x, pos.y - pinPos.y) <= pinRadius + 4) {
-      return { type: 'output_port', id: outId, pinIndex: 0, isOutput: false, x: pinPos.x, y: pinPos.y };
+    const dist = Math.hypot(pos.x - pinPos.x, pos.y - pinPos.y);
+    if (dist <= 26 && dist < bestDist) {
+      bestPin = { type: 'output_port', id: outId, pinIndex: 0, isOutput: false, x: pinPos.x, y: pinPos.y };
+      bestDist = dist;
     }
   }
 
-  // Check gate pins
+  // 3. Check gate pins (tighter tolerance since gate input pins are close together)
   for (let gate of state.sandbox.gates) {
     // Output pin
     const outPos = getPinPosition('gate', gate.id, 'out');
-    if (Math.hypot(pos.x - outPos.x, pos.y - outPos.y) <= pinRadius + 4) {
-      return { type: 'gate', id: gate.id, pinIndex: 0, isOutput: true, x: outPos.x, y: outPos.y };
+    const outDist = Math.hypot(pos.x - outPos.x, pos.y - outPos.y);
+    if (outDist <= 18 && outDist < bestDist) {
+      bestPin = { type: 'gate', id: gate.id, pinIndex: 0, isOutput: true, x: outPos.x, y: outPos.y };
+      bestDist = outDist;
     }
     // Input 0
     const in0Pos = getPinPosition('gate', gate.id, 0);
-    if (Math.hypot(pos.x - in0Pos.x, pos.y - in0Pos.y) <= pinRadius + 4) {
-      return { type: 'gate', id: gate.id, pinIndex: 0, isOutput: false, x: in0Pos.x, y: in0Pos.y };
+    const in0Dist = Math.hypot(pos.x - in0Pos.x, pos.y - in0Pos.y);
+    if (in0Dist <= 14 && in0Dist < bestDist) {
+      bestPin = { type: 'gate', id: gate.id, pinIndex: 0, isOutput: false, x: in0Pos.x, y: in0Pos.y };
+      bestDist = in0Dist;
     }
     // Input 1
     const in1Pos = getPinPosition('gate', gate.id, 1);
-    if (Math.hypot(pos.x - in1Pos.x, pos.y - in1Pos.y) <= pinRadius + 4) {
-      return { type: 'gate', id: gate.id, pinIndex: 1, isOutput: false, x: in1Pos.x, y: in1Pos.y };
+    const in1Dist = Math.hypot(pos.x - in1Pos.x, pos.y - in1Pos.y);
+    if (in1Dist <= 14 && in1Dist < bestDist) {
+      bestPin = { type: 'gate', id: gate.id, pinIndex: 1, isOutput: false, x: in1Pos.x, y: in1Pos.y };
+      bestDist = in1Dist;
     }
   }
 
-  return null;
+  return bestPin;
 }
 
 function getGateAtPosition(pos) {
@@ -1223,6 +1234,8 @@ function onSandboxMouseDown(e) {
     state.sandbox.connectingPin = pin;
     state.sandbox.selectedGate = null;
     state.sandbox.selectedWire = null;
+    const wrapper = document.querySelector('.sandbox-canvas-wrapper');
+    if (wrapper) wrapper.classList.add('dragging');
     drawSandbox();
     return;
   }
@@ -1235,6 +1248,8 @@ function onSandboxMouseDown(e) {
     state.sandbox.selectedWire = null;
     state.sandbox.dragOffset.x = pos.x - gate.x;
     state.sandbox.dragOffset.y = pos.y - gate.y;
+    const wrapper = document.querySelector('.sandbox-canvas-wrapper');
+    if (wrapper) wrapper.classList.add('dragging');
     document.getElementById('btn-delete-selected').classList.remove('disabled');
     document.getElementById('btn-delete-selected').disabled = false;
     drawSandbox();
@@ -1293,6 +1308,9 @@ function onSandboxMouseMove(e) {
 }
 
 function onSandboxMouseUp(e) {
+  const wrapper = document.querySelector('.sandbox-canvas-wrapper');
+  if (wrapper) wrapper.classList.remove('dragging');
+
   if (state.sandbox.draggingGate) {
     state.sandbox.draggingGate = null;
     playSound('click');
@@ -1579,6 +1597,58 @@ function initSandboxTools() {
     document.getElementById('sandbox-success-overlay').classList.add('hidden');
     playSound('click');
   });
+
+  // Fullscreen Landscape Toggle for Sandbox Module
+  const btnFullscreen = document.getElementById('btn-sandbox-fullscreen');
+  if (btnFullscreen) {
+    btnFullscreen.addEventListener('click', () => {
+      logClick();
+      playSound('click');
+      const sandbox = document.getElementById('module-sandbox');
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (sandbox.requestFullscreen) {
+          sandbox.requestFullscreen().then(() => {
+            if (screen.orientation && screen.orientation.lock) {
+              screen.orientation.lock('landscape').catch(err => console.log('Orientation lock error:', err));
+            }
+          }).catch(err => console.log('Fullscreen error:', err));
+        } else if (sandbox.webkitRequestFullscreen) {
+          sandbox.webkitRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    });
+  }
+
+  // Fullscreen change events
+  document.removeEventListener('fullscreenchange', onSandboxFullscreenChange);
+  document.addEventListener('fullscreenchange', onSandboxFullscreenChange);
+  document.removeEventListener('webkitfullscreenchange', onSandboxFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', onSandboxFullscreenChange);
+}
+
+function onSandboxFullscreenChange() {
+  const sandbox = document.getElementById('module-sandbox');
+  const btn = document.getElementById('btn-sandbox-fullscreen');
+  const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  
+  if (sandbox) {
+    if (isFs && (document.fullscreenElement === sandbox || document.webkitFullscreenElement === sandbox)) {
+      sandbox.classList.add('sandbox-fullscreen-mode');
+      if (btn) btn.innerText = 'Exit Fullscreen';
+    } else {
+      sandbox.classList.remove('sandbox-fullscreen-mode');
+      if (btn) btn.innerText = '📱 Fullscreen (Landscape)';
+      if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock().catch(() => {});
+      }
+    }
+  }
 }
 
 // MODULE 5: 4-BIT RIPPLE CARRY LAB

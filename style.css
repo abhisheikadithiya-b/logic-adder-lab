@@ -3088,20 +3088,58 @@ body {
     height: 24px !important;
   }
 
-  /* 2. Navigation Sidebar Collapsed Optimization */
+  /* 2. Horizontal Navigation Row at the top on mobile */
+  .app-container {
+    flex-direction: column !important;
+    height: calc(100vh - 60px) !important;
+  }
+  
   .app-nav {
-    width: 55px !important;
-    padding: 12px 2px !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 6px 12px !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+    scrollbar-width: none !important;
+  }
+  
+  .app-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+  
+  .nav-list {
+    flex-direction: row !important;
+    gap: 12px !important;
+    width: max-content !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
   .nav-item {
-    padding: 10px 2px !important;
-    justify-content: center !important;
-    gap: 0 !important;
+    padding: 6px 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
   }
   
   .nav-num {
-    font-size: 0.75rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  .app-nav .nav-title .nav-text {
+    display: inline !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* Lock horizontal scroll on canvas wrapper when user is dragging elements */
+  .sandbox-canvas-wrapper.dragging {
+    overflow-x: hidden !important;
   }
 
   /* 3. Interactive SVG Schematics & Breadboards Scaling */
@@ -3253,6 +3291,65 @@ body {
 
   .badge-item {
     padding: 10px 4px !important;
+  }
+
+  /* 9. Sandbox Fullscreen Landscape Mode Overrides */
+  #module-sandbox.sandbox-fullscreen-mode {
+    background: #080b15 !important;
+    padding: 12px !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  #module-sandbox.sandbox-fullscreen-mode .section-header {
+    margin-bottom: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  #module-sandbox.sandbox-fullscreen-mode .sandbox-grid {
+    grid-template-columns: 260px 1fr !important;
+    display: grid !important;
+    gap: 12px !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    height: calc(100% - 50px) !important;
+  }
+
+  #module-sandbox.sandbox-fullscreen-mode .sandbox-controls {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    max-height: 100% !important;
+    gap: 8px !important;
+    padding-right: 4px !important;
+  }
+
+  #module-sandbox.sandbox-fullscreen-mode .sandbox-canvas-container {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+  }
+
+  #module-sandbox.sandbox-fullscreen-mode .sandbox-canvas-wrapper {
+    flex: 1 !important;
+    overflow: auto !important;
+  }
+
+  #module-sandbox.sandbox-fullscreen-mode .sandbox-controls::-webkit-scrollbar {
+    width: 5px;
+  }
+  
+  #module-sandbox.sandbox-fullscreen-mode .sandbox-controls::-webkit-scrollbar-thumb {
+    background: rgba(0, 210, 255, 0.3);
+    border-radius: 3px;
   }
 }
 
