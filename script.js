@@ -769,13 +769,22 @@ function addGateToSandbox(type, x, y) {
 
 function updatePaletteDraggables() {
   const items = document.querySelectorAll('.palette-item');
+  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
   items.forEach(item => {
+    // Remove draggable on touch devices — it suppresses click/tap events
+    if (isTouchDevice) {
+      item.removeAttribute('draggable');
+    }
+
+    // Desktop: HTML5 drag-and-drop
     item.addEventListener('dragstart', (e) => {
       e.dataTransfer.setData('gate-type', item.getAttribute('data-gate-type'));
     });
 
-    // Tap-to-Select interaction for mobile
-    item.addEventListener('click', () => {
+    // Gate selection handler (shared by click and touch)
+    function selectGate(e) {
+      if (e && e.preventDefault) e.preventDefault();
       const type = item.getAttribute('data-gate-type');
       
       // If already selected, deselect
@@ -789,6 +798,16 @@ function updatePaletteDraggables() {
         item.classList.add('selected-palette-item');
       }
       playSound('click');
+    }
+
+    // Click for desktop
+    item.addEventListener('click', selectGate);
+
+    // Touchend for mobile (fires reliably even when draggable="true")
+    item.addEventListener('touchend', (e) => {
+      e.preventDefault(); // Prevent subsequent click (double-fire)
+      e.stopPropagation();
+      selectGate(e);
     });
   });
 
@@ -1106,11 +1125,25 @@ function triggerSandboxSuccess() {
 // Mouse coordinates logic in canvas workspace (supporting touch and mouse events)
 function getMouseCoordinates(e) {
   const rect = sandboxCanvas.getBoundingClientRect();
-  const clientX = (e.touches && e.touches.length) ? e.touches[0].clientX : e.clientX;
-  const clientY = (e.touches && e.touches.length) ? e.touches[0].clientY : e.clientY;
+  
+  let clientX = e.clientX;
+  let clientY = e.clientY;
+  
+  if (e.touches && e.touches.length > 0) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else if (e.changedTouches && e.changedTouches.length > 0) {
+    clientX = e.changedTouches[0].clientX;
+    clientY = e.changedTouches[0].clientY;
+  }
+  
+  // Guard against division by zero if canvas is hidden
+  const widthRatio = rect.width > 0 ? (sandboxCanvas.width / rect.width) : 1;
+  const heightRatio = rect.height > 0 ? (sandboxCanvas.height / rect.height) : 1;
+
   return {
-    x: clientX - rect.left,
-    y: clientY - rect.top
+    x: (clientX - rect.left) * widthRatio,
+    y: (clientY - rect.top) * heightRatio
   };
 }
 
@@ -1359,14 +1392,25 @@ function onSandboxMouseUp(e) {
 // Touch support wrapper functions for mobile devices
 function onSandboxTouchStart(e) {
   if (e.touches && e.touches.length > 0) {
-    e.preventDefault();
+    const pos = getMouseCoordinates(e);
+    const pin = getPinAtPosition(pos);
+    const gate = getGateAtPosition(pos);
+    
+    // Only prevent default (stop scrolling) if interacting with interactive elements
+    if ((pin && pin.isOutput) || gate) {
+      e.preventDefault();
+    }
+    
     onSandboxMouseDown(e);
   }
 }
 
 function onSandboxTouchMove(e) {
   if (e.touches && e.touches.length > 0) {
-    e.preventDefault();
+    // Only prevent default (stop scrolling) if currently dragging or wiring
+    if (state.sandbox.draggingGate || state.sandbox.connectingPin) {
+      e.preventDefault();
+    }
     onSandboxMouseMove(e);
   }
 }
@@ -1643,11 +1687,33 @@ function onSandboxFullscreenChange() {
       if (btn) btn.innerText = 'Exit Fullscreen';
     } else {
       sandbox.classList.remove('sandbox-fullscreen-mode');
-      if (btn) btn.innerText = '📱 Fullscreen (Landscape)';
+      if (btn) btn.innerText = '📱 Fullscreen';
       if (screen.orientation && screen.orientation.unlock) {
         screen.orientation.unlock().catch(() => {});
       }
     }
+
+    // Re-initialize canvas after layout settles (100ms debounce)
+    setTimeout(() => {
+      if (sandboxCanvas) {
+        // Re-bind touch listeners (they can detach after DOM re-parenting in fullscreen)
+        sandboxCanvas.removeEventListener('touchstart', onSandboxTouchStart);
+        sandboxCanvas.addEventListener('touchstart', onSandboxTouchStart, { passive: false });
+        sandboxCanvas.removeEventListener('touchmove', onSandboxTouchMove);
+        sandboxCanvas.addEventListener('touchmove', onSandboxTouchMove, { passive: false });
+        window.removeEventListener('touchend', onSandboxTouchEnd);
+        window.addEventListener('touchend', onSandboxTouchEnd);
+        
+        sandboxCanvas.removeEventListener('mousedown', onSandboxMouseDown);
+        sandboxCanvas.addEventListener('mousedown', onSandboxMouseDown);
+        sandboxCanvas.removeEventListener('mousemove', onSandboxMouseMove);
+        sandboxCanvas.addEventListener('mousemove', onSandboxMouseMove);
+        window.removeEventListener('mouseup', onSandboxMouseUp);
+        window.addEventListener('mouseup', onSandboxMouseUp);
+
+        drawSandbox();
+      }
+    }, 150);
   }
 }
 
