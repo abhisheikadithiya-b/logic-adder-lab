@@ -1,0 +1,2164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Logic Adder Lab</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Global SVG Definitions (always visible/active in DOM) -->
+  <svg width="0" height="0" style="position: absolute; pointer-events: none;" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="schematic-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+      </pattern>
+      <filter id="glow-light" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="5" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Circuit Lab Grid Overlay Background -->
+  <div class="circuit-grid"></div>
+
+  <!-- Sound Synth Loader / Context Unlock Modal -->
+  <div id="sound-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="terminal-header">
+        <span class="terminal-dot red"></span>
+        <span class="terminal-dot yellow"></span>
+        <span class="terminal-dot green"></span>
+        <span class="terminal-title">INITIALIZE_LAB.EXE</span>
+      </div>
+      <h2>Welcome to the Logic Adder Lab</h2>
+      <p>This interactive laboratory simulates logic gates, carries, and propagation delays in real time. We synthesize click, hum, and pulse audio effects dynamically using the Web Audio API.</p>
+      <div class="modal-buttons">
+        <button id="btn-sound-enable" class="btn primary">Enable Audio & Start Lab</button>
+        <button id="btn-sound-disable" class="btn secondary">Start Lab (Muted)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New App Landing Page -->
+  <div id="app-landing" class="landing-page">
+    <div class="landing-hero-section">
+      <div class="hero-left">
+        <span class="badge neon-cyan">Interactive Lab</span>
+        <h2 class="hero-title">Learn Adders by Building Them</h2>
+        <p class="hero-description">
+          An interactive digital logic laboratory for exploring binary math, Half Adders, Full Adders, and Karnaugh Map visual simplifications. Toggle switches, trace electron paths, and wire circuits.
+        </p>
+        <div class="hero-actions">
+          <a href="#student-login-box" class="btn primary btn-hero">Start Learning &rarr;</a>
+          <button id="btn-hero-admin" class="btn secondary">Admin Dashboard</button>
+        </div>
+      </div>
+      <div class="hero-right">
+        <!-- Tiny animated auto-toggling Half Adder -->
+        <div class="hero-circuit-card">
+          <div class="terminal-header">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">LIVE_PREVIEW.SYS</span>
+          </div>
+          <svg id="hero-loop-svg" viewBox="0 0 270 160" width="100%" height="100%">
+            <rect width="100%" height="100%" fill="url(#schematic-grid)" />
+            
+            <!-- Input Boxes (Centered text inside padded rects) -->
+            <g transform="translate(15, 25)">
+              <rect x="0" y="0" width="34" height="20" rx="4" fill="#1f2937" stroke="#374151" stroke-width="1.5" />
+              <text id="hero-lbl-a" x="17" y="14" font-family="JetBrains Mono" font-size="10" font-weight="700" fill="var(--accent-cyan)" text-anchor="middle">A=0</text>
+            </g>
+            <g transform="translate(15, 95)">
+              <rect x="0" y="0" width="34" height="20" rx="4" fill="#1f2937" stroke="#374151" stroke-width="1.5" />
+              <text id="hero-lbl-b" x="17" y="14" font-family="JetBrains Mono" font-size="10" font-weight="700" fill="var(--accent-cyan)" text-anchor="middle">B=0</text>
+            </g>
+
+            <!-- Orthogonal Wires (with clear bridge hop) -->
+            <path id="hero-wire-a-xor" class="circuit-wire" d="M 49 35 L 130 35" />
+            <path id="hero-wire-b-xor" class="circuit-wire" d="M 49 105 L 75 105 M 65 105 L 65 55 L 130 55" />
+            <!-- A-AND wire hops over the horizontal B-XOR wire at Y=55 -->
+            <path id="hero-wire-a-and" class="circuit-wire" d="M 85 35 L 85 50 A 5 5 0 0 1 85 60 L 85 115 L 130 115" />
+            <path id="hero-wire-b-and" class="circuit-wire" d="M 75 105 L 75 135 L 130 135" />
+
+            <!-- XOR Gate -->
+            <g transform="translate(130, 20)">
+              <path class="gate-body" d="M 0 10 Q 15 25 0 40 Q 25 40 45 25 Q 25 10 0 10" fill="none" stroke="#4b5563" stroke-width="2" />
+              <path d="M -5 10 Q 10 25 -5 40" fill="none" stroke="#4b5563" stroke-width="1.5" />
+              <text x="18" y="28" font-size="8" fill="#9ca3af" font-family="JetBrains Mono" text-anchor="middle">XOR</text>
+            </g>
+
+            <!-- AND Gate -->
+            <g transform="translate(130, 100)">
+              <path class="gate-body" d="M 0 10 H 20 A 15 15 0 0 1 35 25 A 15 15 0 0 1 20 40 H 0 Z" fill="none" stroke="#4b5563" stroke-width="2" />
+              <text x="15" y="28" font-size="8" fill="#9ca3af" font-family="JetBrains Mono" text-anchor="middle">AND</text>
+            </g>
+
+            <!-- Output Wires -->
+            <path id="hero-wire-sum" class="circuit-wire" d="M 175 45 L 200 45" />
+            <path id="hero-wire-carry" class="circuit-wire" d="M 165 125 L 200 125" />
+
+            <!-- Output LEDs -->
+            <g transform="translate(200, 45)">
+              <circle id="hero-led-sum" cx="15" cy="0" r="10" fill="#1f2937" stroke="#374151" stroke-width="2" />
+              <text x="32" y="3" font-size="8" fill="var(--text-muted)" font-family="JetBrains Mono">SUM</text>
+            </g>
+            <g transform="translate(200, 125)">
+              <circle id="hero-led-carry" cx="15" cy="0" r="10" fill="#1f2937" stroke="#374151" stroke-width="2" />
+              <text x="32" y="3" font-size="8" fill="var(--text-muted)" font-family="JetBrains Mono">CARRY</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: How It Works -->
+    <div class="landing-walkthrough-section">
+      <h3 class="section-title">How the Laboratory Works</h3>
+      <div class="walkthrough-cards-container">
+        <div class="walkthrough-card">
+          <div class="card-animation-box">
+            <svg class="preview-svg" viewBox="0 0 100 60">
+              <rect x="10" y="25" width="20" height="10" rx="2" fill="none" stroke="var(--accent-cyan)" stroke-dasharray="2 2" />
+              <circle cx="50" cy="30" r="12" fill="none" stroke="var(--accent-cyan)" stroke-width="2" />
+              <line x1="30" y1="30" x2="38" y2="30" stroke="var(--accent-cyan)" />
+              <line x1="62" y1="30" x2="80" y2="30" stroke="var(--accent-cyan)" />
+              <circle class="pulsing-dot" cx="50" cy="30" r="4" fill="var(--accent-cyan)" />
+            </svg>
+          </div>
+          <h4>1. Toggle & Observe</h4>
+          <p>Click inputs and watch logic levels flow dynamically.</p>
+        </div>
+        <div class="walkthrough-card">
+          <div class="card-animation-box">
+            <svg class="preview-svg" viewBox="0 0 100 60">
+              <g class="draggable-preview-gate">
+                <rect x="30" y="15" width="40" height="30" rx="4" fill="rgba(0, 240, 255, 0.1)" stroke="var(--accent-cyan)" stroke-width="2" />
+                <text x="50" y="34" font-size="9" fill="var(--text-bright)" font-family="JetBrains Mono" text-anchor="middle">XOR</text>
+              </g>
+              <path d="M 10 30 L 30 30 M 70 30 L 90 30" stroke="#4b5563" stroke-dasharray="3 3" />
+            </svg>
+          </div>
+          <h4>2. Wire Canvas</h4>
+          <p>Drag gates and route wiring harnesses by hand.</p>
+        </div>
+        <div class="walkthrough-card">
+          <div class="card-animation-box">
+            <svg class="preview-svg" viewBox="0 0 100 60">
+              <rect x="25" y="15" width="24" height="24" rx="2" fill="#111827" stroke="#374151" />
+              <rect x="51" y="15" width="24" height="24" rx="2" fill="#111827" stroke="#374151" />
+              <text x="37" y="30" fill="var(--accent-cyan)" font-size="10" font-family="JetBrains Mono" text-anchor="middle">1</text>
+              <text x="63" y="30" fill="var(--accent-cyan)" font-size="10" font-family="JetBrains Mono" text-anchor="middle">1</text>
+              <rect class="loop-outline-preview" x="28" y="18" width="44" height="18" rx="9" fill="none" stroke="var(--accent-amber)" stroke-width="2" />
+            </svg>
+          </div>
+          <h4>3. K-Map Solver</h4>
+          <p>Group boolean terms to simplify equations.</p>
+        </div>
+        <div class="walkthrough-card">
+          <div class="card-animation-box">
+            <div class="badge-trophy-preview">🏆</div>
+          </div>
+          <h4>4. Earn Badges</h4>
+          <p>Complete challenges to unlock dashboard medals.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Try It Now Micro-demo -->
+    <div class="landing-demo-section">
+      <h3 class="section-title">Try It Now (Micro-Demo)</h3>
+      <div class="demo-widget-wrapper">
+        <div class="demo-left">
+          <h4>Half Adder Sandbox</h4>
+          <p class="description">Click the input toggle switches below to see signals propagate to SUM and CARRY LEDs instantly. No account required to try!</p>
+          <div class="demo-controls">
+            <button id="btn-demo-toggle-a" class="btn secondary">Toggle Switch A (0)</button>
+            <button id="btn-demo-toggle-b" class="btn secondary">Toggle Switch B (0)</button>
+          </div>
+        </div>
+        <div class="demo-right">
+          <div class="schematic-wrapper compact">
+            <svg id="demo-ha-svg" viewBox="0 0 400 240" class="logic-svg">
+              <rect width="100%" height="100%" fill="url(#schematic-grid)" />
+              
+              <g transform="translate(50, 60)">
+                <circle id="demo-in-a" class="terminal-node" cx="0" cy="0" r="8" />
+                <text x="-25" y="4" fill="var(--text-bright)" font-family="JetBrains Mono" font-weight="700">A</text>
+              </g>
+              <g transform="translate(50, 180)">
+                <circle id="demo-in-b" class="terminal-node" cx="0" cy="0" r="8" />
+                <text x="-25" y="4" fill="var(--text-bright)" font-family="JetBrains Mono" font-weight="700">B</text>
+              </g>
+
+              <path id="demo-w-a-xor" class="circuit-wire" d="M 50 60 L 150 60 L 150 90 L 220 90" />
+              <path id="demo-w-a-and" class="circuit-wire" d="M 110 60 L 110 160 L 225 160" />
+              <path id="demo-w-b-xor" class="circuit-wire" d="M 50 180 L 170 180 L 170 110 L 220 110" />
+              <path id="demo-w-b-and" class="circuit-wire" d="M 50 180 L 225 180" />
+
+              <g id="demo-xor-gate" class="gate-group" transform="translate(220, 75)">
+                <path class="gate-body" d="M 0 10 Q 15 25 0 40 Q 25 40 45 25 Q 25 10 0 10" />
+                <path class="gate-xor-back" d="M -5 10 Q 10 25 -5 40" />
+                <text class="gate-label" x="18" y="29">XOR</text>
+                <circle class="terminal-node" cx="45" cy="25" r="5" />
+              </g>
+
+              <g id="demo-and-gate" class="gate-group" transform="translate(225, 145)">
+                <path class="gate-body" d="M 0 10 H 20 A 15 15 0 0 1 35 25 A 15 15 0 0 1 20 40 H 0 Z" />
+                <text class="gate-label" x="15" y="29">AND</text>
+                <circle class="terminal-node" cx="35" cy="25" r="5" />
+              </g>
+
+              <path id="demo-w-xor-sum" class="circuit-wire" d="M 265 100 L 330 100" />
+              <path id="demo-w-and-carry" class="circuit-wire" d="M 260 170 L 330 170" />
+
+              <g class="output-node" transform="translate(330, 100)">
+                <circle class="led-bulb" id="demo-led-sum" cx="15" cy="0" r="14" />
+                <text x="35" y="4" class="led-label">SUM</text>
+              </g>
+              <g class="output-node" transform="translate(330, 170)">
+                <circle class="led-bulb" id="demo-led-carry" cx="15" cy="0" r="14" />
+                <text x="35" y="4" class="led-label">CARRY</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Student Login Form -->
+    <div id="student-login-box" class="landing-login-section">
+      <div class="login-card">
+        <div class="terminal-header">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span class="terminal-title">STUDENT_AUTHENTICATION.SH</span>
+        </div>
+        <h3>Enter Student Laboratory</h3>
+        <p class="hint">Log in with your roll number and password to track completion progress, submit test scores, and earn mastery badges.</p>
+        <form id="student-login-form">
+          <div class="form-group">
+            <label for="student-roll">Roll Number</label>
+            <input type="text" id="student-roll" placeholder="e.g. 2024CS101" required>
+          </div>
+          <div class="form-group">
+            <label for="student-class">Class</label>
+            <input type="text" id="student-class" placeholder="e.g. CSE-A" required>
+          </div>
+          <div class="form-group">
+            <label for="student-password">Password</label>
+            <input type="password" id="student-password" placeholder="Enter your password..." required>
+          </div>
+          <div id="login-error-msg" class="login-error hidden">Invalid credentials. Please check your roll number, class, and password.</div>
+          <div id="login-spinner" class="login-spinner hidden">
+            <div class="spinner-ring"></div>
+            <span>Authenticating...</span>
+          </div>
+          <button type="submit" id="btn-student-login" class="btn primary full-width">Enter Laboratory &rarr;</button>
+        </form>
+        <div class="login-footer">
+          <button id="btn-login-guest" class="btn-link">Continue as Guest (No progress tracking)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: Admin Login Form Drawer (Hidden initially) -->
+    <div id="admin-login-box" class="landing-login-section hidden">
+      <div class="login-card admin-card">
+        <div class="terminal-header">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span class="terminal-title">ADMINISTRATOR_ACCESS.SYS</span>
+        </div>
+        <h3>Teacher / Administrator Access</h3>
+        <p class="hint">Verify credentials to check class-wide statistics and drill down on student rosters.</p>
+        <form id="admin-login-form">
+          <div class="form-group">
+            <label for="admin-username">Username</label>
+            <input type="text" id="admin-username" placeholder="Enter admin username..." required>
+          </div>
+          <div class="form-group">
+            <label for="admin-password">Password</label>
+            <input type="password" id="admin-password" placeholder="Enter admin password..." required>
+          </div>
+          <button type="submit" class="btn primary full-width">Sign In as Admin &rarr;</button>
+        </form>
+        <div class="login-footer">
+          <button id="btn-admin-cancel" class="btn-link">Cancel and Return</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer with understated Admin access button -->
+    <footer class="landing-footer">
+      <span>LOGIC ADDER LAB &copy; 2026</span>
+      <button id="btn-footer-admin-login" class="footer-admin-btn">Teacher / Admin Login</button>
+    </footer>
+  </div>
+
+  <!-- New Admin Dashboard Container -->
+  <div id="app-admin" class="admin-dashboard hidden">
+    <header class="admin-header">
+      <div class="admin-logo">
+        <h2>Teacher / Admin Portal</h2>
+        <span class="badge neon-amber">Classroom Analytics</span>
+      </div>
+      <button id="btn-admin-logout" class="btn secondary">Logout and Exit</button>
+    </header>
+
+    <!-- Overview Stats Rows -->
+    <div class="admin-stats-grid">
+      <div class="admin-stat-card">
+        <span class="stat-lbl">Active Roster Size</span>
+        <h3 id="admin-stat-total-students">0</h3>
+        <span class="stat-trend text-bright">Persisted browser profiles</span>
+      </div>
+      <div class="admin-stat-card">
+        <span class="stat-lbl">Class Avg Lab Progress</span>
+        <h3 id="admin-stat-avg-completion">0%</h3>
+        <div class="mini-bar-track"><div id="admin-bar-avg-completion" class="mini-bar-fill fill-green" style="width: 0%;"></div></div>
+      </div>
+      <div class="admin-stat-card">
+        <span class="stat-lbl">Class Avg Quiz Accuracy</span>
+        <h3 id="admin-stat-avg-accuracy">0%</h3>
+        <div class="mini-bar-track"><div id="admin-bar-avg-accuracy" class="mini-bar-fill fill-cyan" style="width: 0%;"></div></div>
+      </div>
+      <div class="admin-stat-card">
+        <span class="stat-lbl">Common Missed Concept</span>
+        <h3 id="admin-stat-missed-concept">None</h3>
+        <span class="stat-trend text-muted">Arcade error assessment</span>
+      </div>
+    </div>
+
+    <!-- Database Settings Card -->
+    <div class="admin-main-card admin-settings-card">
+      <div class="settings-header">
+        <h3>⚙️ Database Settings</h3>
+        <span class="badge" id="db-connection-badge">NOT CONNECTED</span>
+      </div>
+      <p class="hint">Connect your Google Sheet to sync student data. Paste the Google Apps Script Web App URL below.</p>
+      <div class="settings-form">
+        <div class="form-group">
+          <label for="admin-sheet-url">Google Apps Script Web App URL</label>
+          <input type="url" id="admin-sheet-url" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+        <div class="settings-actions">
+          <button id="btn-save-sheet-url" class="btn primary">Save &amp; Test Connection</button>
+          <button id="btn-sync-from-sheet" class="btn secondary">Sync Students from Sheet</button>
+        </div>
+        <div id="sheet-status-msg" class="sheet-status-msg hidden"></div>
+      </div>
+    </div>
+
+    <!-- Main Table Area -->
+    <div class="admin-main-card">
+      <div class="table-toolbar">
+        <div class="toolbar-search">
+          <input type="text" id="admin-search-input" placeholder="Search student name...">
+        </div>
+        <div class="toolbar-filters">
+          <div class="filter-group">
+            <label for="admin-sort-select">Sort By:</label>
+            <select id="admin-sort-select">
+              <option value="name">Student Name</option>
+              <option value="completion">Completion %</option>
+              <option value="accuracy">Quiz Accuracy %</option>
+              <option value="active">Last Active Time</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="admin-filter-select">Class Filter:</label>
+            <select id="admin-filter-select">
+              <option value="all">All Classes</option>
+              <option value="CS101-FALL">CS101-FALL</option>
+              <option value="GUEST">Guest Sessions</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Roster Table -->
+      <div class="table-wrapper">
+        <table class="roster-table">
+          <thead>
+            <tr>
+              <th>Roll No.</th>
+              <th>Student Name</th>
+              <th>Class</th>
+              <th>Labs Completed</th>
+              <th>Overall Accuracy</th>
+              <th>Last Active</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-roster-tbody">
+            <!-- Dynamically populated rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Student Detail Drill-Down Modal -->
+    <div id="admin-detail-modal" class="modal-overlay hidden">
+      <div class="modal-content large-content">
+        <div class="terminal-header">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span id="admin-detail-title" class="terminal-title">STUDENT_DOSSIER.TXT</span>
+        </div>
+        
+        <div class="detail-grid">
+          <!-- Left Column: Student summary -->
+          <div class="detail-sidebar">
+            <h2 id="admin-detail-name">Student Name</h2>
+            <span class="badge" id="admin-detail-class">Class Code</span>
+            <div class="detail-stats-list mt-4">
+              <div class="detail-stat-row">
+                <span>Last Active:</span>
+                <strong id="admin-detail-active">Just Now</strong>
+              </div>
+              <div class="detail-stat-row">
+                <span>Clicks Registered:</span>
+                <strong id="admin-detail-clicks">0</strong>
+              </div>
+              <div class="detail-stat-row">
+                <span>Correct Answers:</span>
+                <strong id="admin-detail-correct">0</strong>
+              </div>
+            </div>
+            
+            <h4 class="mt-4">Unlocked Badges</h4>
+            <div id="admin-detail-badges" class="detail-badge-container">
+              <!-- Dynamically listing badge icons/labels -->
+            </div>
+          </div>
+
+          <!-- Right Column: Lab records & Mistakes list -->
+          <div class="detail-body">
+            <h3>Laboratory Module Records</h3>
+            <div id="admin-detail-modules" class="detail-modules-list">
+              <!-- Dynamically populate completed state -->
+            </div>
+
+            <h3 class="mt-4">Missed Quiz Questions</h3>
+            <div class="mistakes-ledger-wrapper">
+              <ul id="admin-detail-mistakes" class="mistakes-list">
+                <!-- List of incorrect answers -->
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-buttons mt-4">
+          <button id="btn-admin-detail-close" class="btn primary">Close Dossier</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-trainer-container" class="hidden">
+    <!-- Header -->
+    <header class="app-header">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" width="30" height="30">
+          <path d="M10,15 L25,15 A10,10 0 0 1 35,25 A10,10 0 0 1 25,35 L10,35 Z" fill="none" stroke="var(--accent-cyan)" stroke-width="3" />
+          <line x1="5" y1="20" x2="10" y2="20" stroke="var(--accent-cyan)" stroke-width="3" />
+          <line x1="5" y1="30" x2="10" y2="30" stroke="var(--accent-cyan)" stroke-width="3" stroke-linecap="round" />
+          <line x1="35" y1="25" x2="45" y2="25" stroke="var(--accent-amber)" stroke-width="3" stroke-linecap="round" />
+          <circle cx="45" cy="25" r="3" fill="var(--accent-amber)" />
+        </svg>
+      </div>
+      <div class="logo-text">
+        <h1>LOGIC<span>ADDER</span>LAB</h1>
+        <span class="tagline">Interactive Hardware Simulation</span>
+      </div>
+    </div>
+
+    <!-- Mastery progress indicator -->
+    <div class="header-progress">
+      <div class="progress-info">
+        <span class="progress-title">LAB COMPLETION</span>
+        <span id="completion-text" class="progress-value">0%</span>
+      </div>
+      <div class="progress-bar-container">
+        <div id="completion-bar" class="progress-bar" style="width: 0%;"></div>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <button id="btn-sound-toggle" class="icon-btn muted" title="Toggle Sound">
+        <svg id="sound-icon-on" viewBox="0 0 24 24" width="20" height="20" class="hidden">
+          <path fill="currentColor" d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/>
+        </svg>
+        <svg id="sound-icon-off" viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M12,4L9.91,6.09L12,8.18M19,12C19,14.88 17.38,17.38 15,18.6L16.45,20.05C19.21,18.3 21,15.37 21,12C21,7.72 18,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.44 14,18.7V20.76C15.38,20.45 16.63,19.78 17.69,18.95L19.73,21L21,19.73L12,10.73M12,4V7.27L9,4.27"/>
+        </svg>
+      </button>
+      <button id="btn-global-reset" class="icon-btn" title="Reset All Modules">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+    <!-- Sidebar Stepper Navigation -->
+    <nav class="app-nav">
+      <ul class="nav-list">
+        <li class="nav-item active" data-target="module-intro">
+          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">01.</span> <span class="nav-text">Binary Carry</span></span>
+          <span class="nav-status-badge"></span>
+        </li>
+        <li class="nav-item" data-target="module-half-adder">
+          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">02.</span> <span class="nav-text">Half Adder Lab</span></span>
+          <span class="nav-status-badge"></span>
+        </li>
+        <li class="nav-item" data-target="module-full-adder">
+          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">03.</span> <span class="nav-text">Full Adder Lab</span></span>
+          <span class="nav-status-badge"></span>
+        </li>
+        <li class="nav-item" data-target="module-kmap">
+          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">04.</span> <span class="nav-text">K-Map Lab</span></span>
+          <span class="nav-status-badge"></span>
+        </li>
+        <li class="nav-item" data-target="module-sandbox">
+          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">05.</span> <span class="nav-text">Gate Sandbox</span></span>
+          <span class="nav-status-badge"></span>
+        </li>
+        <li class="nav-item" data-target="module-ripple-carry">
+          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">06.</span> <span class="nav-text">Ripple Playground</span></span>
+          <span class="nav-status-badge"></span>
+        </li>
+        <li class="nav-item" data-target="module-breadboard">
+          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">07.</span> <span class="nav-text">Breadboard/IC</span></span>
+          <span class="nav-status-badge"></span>
+        </li>
+        <li class="nav-item" data-target="module-arcade">
+          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">08.</span> <span class="nav-text">Logic Arcade</span></span>
+          <span class="nav-status-badge"></span>
+        </li>
+        <li class="nav-item" data-target="module-mastery">
+          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">09.</span> <span class="nav-text">Mastery Stats</span></span>
+          <span class="nav-status-badge"></span>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Main Content Workspace -->
+    <main class="app-content">
+
+      <!-- ==================== MODULE 1: INTRODUCTION ==================== -->
+      <section id="module-intro" class="lab-section active">
+        <div class="section-header">
+          <h2>Module 1: Why We Need Carries</h2>
+          <span class="module-difficulty">Beginner</span>
+        </div>
+        <div class="section-card intro-container">
+          <div class="info-block">
+            <p class="highlight-text">Adding numbers in binary follows the exact same logic as decimal, but you run out of digits much faster!</p>
+            <p>In decimal, 9 + 1 overflows one column, forcing you to write 0 and "carry" 1 to the left: 10. In binary, the limit is 1. So 1 + 1 overflows immediately, yielding 0 and carrying a 1, written as 10<sub>2</sub> (which equals 2 in decimal).</p>
+          </div>
+
+          <!-- Decimal to Binary Interactive Demonstration -->
+          <div class="interactive-demo-card">
+            <h3>Interactive Carrying Demo</h3>
+            <p class="hint">Toggle the bits below to see how decimal and binary sums correspond and force carries.</p>
+            
+            <div class="addition-visualizer">
+              <!-- Binary Column -->
+              <div class="viz-column binary-viz">
+                <h4>Binary Addition</h4>
+                <div class="addition-grid">
+                  <div class="grid-row carry-row">
+                    <span class="label">Carry</span>
+                    <span id="binary-carry-val" class="bit-box carry-bit">0</span>
+                  </div>
+                  <div class="grid-row input-row">
+                    <span class="label">Input A</span>
+                    <button id="intro-bit-a" class="bit-toggle">0</button>
+                  </div>
+                  <div class="grid-row input-row">
+                    <span class="label">Input B</span>
+                    <button id="intro-bit-b" class="bit-toggle">0</button>
+                  </div>
+                  <div class="divider-row"><hr></div>
+                  <div class="grid-row sum-row">
+                    <span class="label">Result</span>
+                    <div class="binary-digits">
+                      <span id="binary-res-c" class="bit-box active-carry">0</span>
+                      <span id="binary-res-s" class="bit-box">0</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Decimal Column -->
+              <div class="viz-column decimal-viz">
+                <h4>Decimal Equivalent</h4>
+                <div class="decimal-sum-display">
+                  <div class="equation">
+                    <span id="dec-a">0</span>
+                    <span class="op">+</span>
+                    <span id="dec-b">0</span>
+                    <span class="eq">=</span>
+                    <span id="dec-sum" class="glowing-sum">0</span>
+                  </div>
+                  <div class="explanation-box">
+                    <span id="intro-explanation">Both inputs are 0. No carry generated.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="step-footer">
+            <button class="btn primary next-step-btn" data-next="module-half-adder">Proceed to Half Adder Lab &rarr;</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== MODULE 2: HALF ADDER LAB ==================== -->
+      <section id="module-half-adder" class="lab-section">
+        <div class="section-header">
+          <h2>Module 2: The Half Adder</h2>
+          <span class="module-difficulty">Core Logic</span>
+        </div>
+        <div class="split-layout">
+          <!-- Interactive Diagram Column -->
+          <div class="card-column logic-diagram-card">
+            <div class="card-header-actions">
+              <h3>Gate Schematic</h3>
+              <div class="signal-legend">
+                <span class="legend-item"><span class="legend-dot high"></span> HIGH (1)</span>
+                <span class="legend-item"><span class="legend-dot low"></span> LOW (0)</span>
+              </div>
+            </div>
+            
+            <!-- Interactive schematic wrapper -->
+            <div class="schematic-wrapper">
+              <!-- SVG Schematic -->
+              <svg id="half-adder-svg" class="logic-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 350">
+                <rect width="100%" height="100%" fill="url(#schematic-grid)" />
+
+                <!-- Nodes / Terminals -->
+                <!-- Inputs -->
+                <g class="input-node" transform="translate(60, 100)">
+                  <text x="-40" y="5" fill="var(--text-bright)" font-family="JetBrains Mono" font-weight="700">A</text>
+                  <circle id="ha-in-a-terminal" class="terminal-node" cx="0" cy="0" r="8" />
+                  <foreignObject x="-30" y="-35" width="24" height="24">
+                    <button class="node-toggle" id="ha-switch-a">0</button>
+                  </foreignObject>
+                </g>
+                <g class="input-node" transform="translate(60, 240)">
+                  <text x="-40" y="5" fill="var(--text-bright)" font-family="JetBrains Mono" font-weight="700">B</text>
+                  <circle id="ha-in-b-terminal" class="terminal-node" cx="0" cy="0" r="8" />
+                  <foreignObject x="-30" y="-35" width="24" height="24">
+                    <button class="node-toggle" id="ha-switch-b">0</button>
+                  </foreignObject>
+                </g>
+
+                <!-- Connecting Wires -->
+                <!-- Wire paths will be dynamically set or toggled active in JS -->
+                <!-- Input A to XOR Pin 1 -->
+                <path id="ha-wire-a-xor" class="circuit-wire" d="M 60 100 L 150 100 L 150 115 L 260 115" />
+                <!-- Input A to AND Pin 1 -->
+                <path id="ha-wire-a-and" class="circuit-wire" d="M 120 100 L 120 220 L 265 220" />
+                <!-- Input B to XOR Pin 2 -->
+                <path id="ha-wire-b-xor" class="circuit-wire" d="M 60 240 L 180 240 L 180 135 L 260 135" />
+                <!-- Input B to AND Pin 2 -->
+                <path id="ha-wire-b-and" class="circuit-wire" d="M 60 240 L 265 240" />
+
+                <!-- XOR Gate (SUM) -->
+                <g id="ha-xor-gate" class="gate-group" transform="translate(260, 100)">
+                  <path class="gate-body" d="M 0 10 Q 15 25 0 40 Q 25 40 45 25 Q 25 10 0 10" />
+                  <path class="gate-xor-back" d="M -5 10 Q 10 25 -5 40" />
+                  <text class="gate-label" x="18" y="29">XOR</text>
+                  <circle class="terminal-node" cx="45" cy="25" r="5" />
+                  <g class="schematic-overlay-term" transform="translate(0, -12)">
+                    <rect x="-10" y="-12" width="66" height="15" rx="3" fill="#0b0f19" stroke="var(--accent-cyan)" stroke-width="1"/>
+                    <text x="23" y="-1" font-family="JetBrains Mono" font-size="8" fill="var(--text-bright)" font-weight="700" text-anchor="middle">S = A ⊕ B</text>
+                  </g>
+                </g>
+
+                <!-- AND Gate (CARRY) -->
+                <g id="ha-and-gate" class="gate-group" transform="translate(265, 205)">
+                  <path class="gate-body" d="M 0 10 H 20 A 15 15 0 0 1 35 25 A 15 15 0 0 1 20 40 H 0 Z" />
+                  <text class="gate-label" x="12" y="29">AND</text>
+                  <circle class="terminal-node" cx="35" cy="25" r="5" />
+                  <g class="schematic-overlay-term" transform="translate(-5, -12)">
+                    <rect x="-5" y="-12" width="58" height="15" rx="3" fill="#0b0f19" stroke="var(--accent-amber)" stroke-width="1"/>
+                    <text x="24" y="-1" font-family="JetBrains Mono" font-size="8" fill="var(--text-bright)" font-weight="700" text-anchor="middle">C = A · B</text>
+                  </g>
+                </g>
+
+                <!-- Output Wires -->
+                <path id="ha-wire-xor-sum" class="circuit-wire" d="M 305 125 L 450 125" />
+                <path id="ha-wire-and-carry" class="circuit-wire" d="M 300 230 L 450 230" />
+
+                <!-- Output Terminals & LEDs -->
+                <g class="output-node" transform="translate(450, 125)">
+                  <circle id="ha-out-s-terminal" class="terminal-node" cx="0" cy="0" r="8" />
+                  <circle id="ha-led-sum" class="led-bulb" cx="40" cy="0" r="16" />
+                  <text x="70" y="5" class="led-label">SUM (S)</text>
+                </g>
+                <g class="output-node" transform="translate(450, 230)">
+                  <circle id="ha-out-c-terminal" class="terminal-node" cx="0" cy="0" r="8" />
+                  <circle id="ha-led-carry" class="led-bulb" cx="40" cy="0" r="16" />
+                  <text x="70" y="5" class="led-label">CARRY (C)</text>
+                </g>
+
+                <!-- Signal Flow Dashes for animations (when wire is active) -->
+                <path id="ha-pulse-a-xor" class="wire-pulse hidden" d="M 60 100 L 150 100 L 150 115 L 260 115" />
+                <path id="ha-pulse-a-and" class="wire-pulse hidden" d="M 120 100 L 120 220 L 265 220" />
+                <path id="ha-pulse-b-xor" class="wire-pulse hidden" d="M 60 240 L 180 240 L 180 135 L 260 135" />
+                <path id="ha-pulse-b-and" class="wire-pulse hidden" d="M 60 240 L 265 240" />
+                <path id="ha-pulse-xor-sum" class="wire-pulse hidden" d="M 305 125 L 450 125" />
+                <path id="ha-pulse-and-carry" class="wire-pulse hidden" d="M 300 230 L 450 230" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Interactive Truth Table Column -->
+          <div class="card-column data-card">
+            <h3>Module Explanation</h3>
+            <p class="description">A <strong>Half Adder</strong> is a combinational circuit that adds two single binary bits. It generates a <strong>SUM</strong> (using an XOR gate) and a <strong>CARRY</strong> (using an AND gate).</p>
+            <p class="warning-alert"><strong>Limitation:</strong> It has no input pin for a carry from a previous column. That's why it's called a <em>Half</em> Adder!</p>
+
+            <h3>Interactive Truth Table</h3>
+            <div class="table-container">
+              <table id="ha-truth-table" class="truth-table">
+                <thead>
+                  <tr>
+                    <th>Input A</th>
+                    <th>Input B</th>
+                    <th>SUM (S)</th>
+                    <th>CARRY (C)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-inputs="00"><td>0</td><td>0</td><td class="bold">0</td><td class="bold">0</td></tr>
+                  <tr data-inputs="01"><td>0</td><td>1</td><td class="bold">1</td><td class="bold">0</td></tr>
+                  <tr data-inputs="10"><td>1</td><td>0</td><td class="bold">1</td><td class="bold">0</td></tr>
+                  <tr data-inputs="11"><td>1</td><td>1</td><td class="bold">0</td><td class="bold">1</td></tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="step-footer mt-auto">
+              <button class="btn primary next-step-btn" data-next="module-full-adder">Proceed to Full Adder Lab &rarr;</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== MODULE 3: FULL ADDER LAB ==================== -->
+      <section id="module-full-adder" class="lab-section">
+        <div class="section-header">
+          <h2>Module 3: The Full Adder</h2>
+          <span class="module-difficulty">Intermediate</span>
+        </div>
+        <div class="split-layout">
+          <!-- Interactive Diagram Column -->
+          <div class="card-column logic-diagram-card large">
+            <div class="card-header-actions">
+              <h3>Circuit Schematic</h3>
+              <div class="view-controls">
+                <button id="btn-fa-view-gates" class="toggle-switch-btn active">Gate-Level View</button>
+                <button id="btn-fa-view-blocks" class="toggle-switch-btn">Block View (2 HAs + OR)</button>
+              </div>
+            </div>
+
+            <!-- Full Adder schematic container -->
+            <div class="schematic-wrapper">
+              
+              <!-- VIEW 1: GATE LEVEL VIEW SVG -->
+              <svg id="fa-gate-svg" class="logic-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 450">
+                <rect width="100%" height="100%" fill="url(#schematic-grid)" />
+
+                <!-- Inputs -->
+                <g class="input-node" transform="translate(50, 80)">
+                  <text x="-35" y="5" fill="var(--text-bright)" font-family="JetBrains Mono" font-weight="700">A</text>
+                  <circle id="fa-in-a-terminal" class="terminal-node" cx="0" cy="0" r="8" />
+                  <foreignObject x="-25" y="-35" width="24" height="24">
+                    <button class="node-toggle" id="fa-switch-a">0</button>
+                  </foreignObject>
+                </g>
+                <g class="input-node" transform="translate(50, 200)">
+                  <text x="-35" y="5" fill="var(--text-bright)" font-family="JetBrains Mono" font-weight="700">B</text>
+                  <circle id="fa-in-b-terminal" class="terminal-node" cx="0" cy="0" r="8" />
+                  <foreignObject x="-25" y="-35" width="24" height="24">
+                    <button class="node-toggle" id="fa-switch-b">0</button>
+                  </foreignObject>
+                </g>
+                <g class="input-node" transform="translate(50, 320)">
+                  <text x="-35" y="5" fill="var(--text-bright)" font-family="JetBrains Mono" font-weight="700">C<tspan dy="4" font-size="9">in</tspan></text>
+                  <circle id="fa-in-cin-terminal" class="terminal-node" cx="0" cy="0" r="8" />
+                  <foreignObject x="-25" y="-35" width="24" height="24">
+                    <button class="node-toggle" id="fa-switch-cin">0</button>
+                  </foreignObject>
+                </g>
+
+                <!-- Gate 1: XOR 1 (A, B) -->
+                <g id="fa-xor1" class="gate-group" transform="translate(180, 80)">
+                  <path class="gate-body" d="M 0 10 Q 15 25 0 40 Q 25 40 45 25 Q 25 10 0 10" />
+                  <path class="gate-xor-back" d="M -5 10 Q 10 25 -5 40" />
+                  <text class="gate-label" x="18" y="29">XOR</text>
+                  <circle class="terminal-node" cx="45" cy="25" r="5" />
+                  <g class="schematic-overlay-term" transform="translate(-10, -12)">
+                    <rect x="-10" y="-12" width="76" height="15" rx="3" fill="#0b0f19" stroke="var(--accent-cyan)" stroke-width="1"/>
+                    <text x="28" y="-1" font-family="JetBrains Mono" font-size="7" fill="var(--text-bright)" font-weight="700" text-anchor="middle">XOR1 = A ⊕ B</text>
+                  </g>
+                </g>
+
+                <!-- Gate 2: AND 1 (A, B) -->
+                <g id="fa-and1" class="gate-group" transform="translate(180, 200)">
+                  <path class="gate-body" d="M 0 10 H 20 A 15 15 0 0 1 35 25 A 15 15 0 0 1 20 40 H 0 Z" />
+                  <text class="gate-label" x="12" y="29">AND</text>
+                  <circle class="terminal-node" cx="35" cy="25" r="5" />
+                  <g class="schematic-overlay-term" transform="translate(-15, -12)">
+                    <rect x="-5" y="-12" width="68" height="15" rx="3" fill="#0b0f19" stroke="var(--accent-amber)" stroke-width="1"/>
+                    <text x="29" y="-1" font-family="JetBrains Mono" font-size="7" fill="var(--text-bright)" font-weight="700" text-anchor="middle">AND1 = A · B</text>
+                  </g>
+                </g>
+
+                <!-- Gate 3: XOR 2 -->
+                <g id="fa-xor2" class="gate-group" transform="translate(340, 110)">
+                  <path class="gate-body" d="M 0 10 Q 15 25 0 40 Q 25 40 45 25 Q 25 10 0 10" />
+                  <path class="gate-xor-back" d="M -5 10 Q 10 25 -5 40" />
+                  <text class="gate-label" x="18" y="29">XOR</text>
+                  <circle class="terminal-node" cx="45" cy="25" r="5" />
+                  <g class="schematic-overlay-term" transform="translate(-25, -12)">
+                    <rect x="-10" y="-12" width="105" height="15" rx="3" fill="#0b0f19" stroke="var(--accent-cyan)" stroke-width="1"/>
+                    <text x="42" y="-1" font-family="JetBrains Mono" font-size="7" fill="var(--text-bright)" font-weight="700" text-anchor="middle">SUM = XOR1 ⊕ Cin</text>
+                  </g>
+                </g>
+
+                <!-- Gate 4: AND 2 -->
+                <g id="fa-and2" class="gate-group" transform="translate(340, 290)">
+                  <path class="gate-body" d="M 0 10 H 20 A 15 15 0 0 1 35 25 A 15 15 0 0 1 20 40 H 0 Z" />
+                  <text class="gate-label" x="12" y="29">AND</text>
+                  <circle class="terminal-node" cx="35" cy="25" r="5" />
+                  <g class="schematic-overlay-term" transform="translate(-25, -12)">
+                    <rect x="-10" y="-12" width="105" height="15" rx="3" fill="#0b0f19" stroke="var(--accent-amber)" stroke-width="1"/>
+                    <text x="42" y="-1" font-family="JetBrains Mono" font-size="7" fill="var(--text-bright)" font-weight="700" text-anchor="middle">AND2 = XOR1 · Cin</text>
+                  </g>
+                </g>
+
+                <!-- Gate 5: OR -->
+                <g id="fa-or" class="gate-group" transform="translate(480, 250)">
+                  <path class="gate-body" d="M 0 10 Q 15 25 0 40 Q 25 40 45 25 Q 25 10 0 10" />
+                  <text class="gate-label" x="18" y="29">OR</text>
+                  <circle class="terminal-node" cx="45" cy="25" r="5" />
+                  <g class="schematic-overlay-term" transform="translate(-25, -12)">
+                    <rect x="-15" y="-12" width="112" height="15" rx="3" fill="#0b0f19" stroke="var(--accent-pink)" stroke-width="1"/>
+                    <text x="41" y="-1" font-family="JetBrains Mono" font-size="7" fill="var(--text-bright)" font-weight="700" text-anchor="middle">Cout = AND1 + AND2</text>
+                  </g>
+                </g>
+
+                <!-- Connections -->
+                <path id="fa-w-a-xor1" class="circuit-wire" d="M 50 80 L 100 80 L 100 95 L 180 95" />
+                <path id="fa-w-a-and1" class="circuit-wire" d="M 100 80 L 100 170 L 140 170 L 140 210 L 180 210" />
+                <path id="fa-w-b-xor1" class="circuit-wire" d="M 50 200 L 120 200 L 120 175 A 5 5 0 0 1 120 165 L 120 115 L 180 115" />
+                <path id="fa-w-b-and1" class="circuit-wire" d="M 120 200 L 120 230 L 180 230" />
+
+                <path id="fa-w-cin-xor2" class="circuit-wire" d="M 50 320 L 290 320 L 290 275 A 5 5 0 0 1 290 265 L 290 225 A 5 5 0 0 1 290 215 L 290 145 L 340 145" />
+                <path id="fa-w-cin-and2" class="circuit-wire" d="M 290 320 L 340 320" />
+
+                <path id="fa-w-xor1-xor2" class="circuit-wire" d="M 225 105 L 260 105 L 260 125 L 340 125" />
+                <path id="fa-w-xor1-and2" class="circuit-wire" d="M 260 105 L 260 215 A 5 5 0 0 1 260 225 L 260 270 L 310 270 L 310 300 L 340 300" />
+
+                <path id="fa-w-and1-or" class="circuit-wire" d="M 215 220 L 430 220 L 430 285 L 480 285" />
+                <path id="fa-w-and2-or" class="circuit-wire" d="M 375 310 L 450 310 L 450 290 A 5 5 0 0 1 450 280 L 450 265 L 480 265" />
+
+                <!-- Outputs -->
+                <path id="fa-w-xor2-sum" class="circuit-wire" d="M 385 135 L 560 135" />
+                <path id="fa-w-or-carry" class="circuit-wire" d="M 525 275 L 560 275" />
+
+                <g class="output-node" transform="translate(560, 135)">
+                  <circle class="terminal-node" cx="0" cy="0" r="8" />
+                  <circle id="fa-led-sum" class="led-bulb" cx="40" cy="0" r="16" />
+                  <text x="70" y="5" class="led-label">SUM (S)</text>
+                </g>
+                <g class="output-node" transform="translate(560, 275)">
+                  <circle class="terminal-node" cx="0" cy="0" r="8" />
+                  <circle id="fa-led-carry" class="led-bulb" cx="40" cy="0" r="16" />
+                  <text x="70" y="5" class="led-label">C<tspan dy="4" font-size="9">out</tspan></text>
+                </g>
+
+                <!-- Signal pulses -->
+                <path id="fa-p-a-xor1" class="wire-pulse hidden" d="M 50 80 L 100 80 L 100 95 L 180 95" />
+                <path id="fa-p-a-and1" class="wire-pulse hidden" d="M 100 80 L 100 170 L 140 170 L 140 210 L 180 210" />
+                <path id="fa-p-b-xor1" class="wire-pulse hidden" d="M 50 200 L 120 200 L 120 175 A 5 5 0 0 1 120 165 L 120 115 L 180 115" />
+                <path id="fa-p-b-and1" class="wire-pulse hidden" d="M 120 200 L 120 230 L 180 230" />
+                <path id="fa-p-cin-xor2" class="wire-pulse hidden" d="M 50 320 L 290 320 L 290 275 A 5 5 0 0 1 290 265 L 290 225 A 5 5 0 0 1 290 215 L 290 145 L 340 145" />
+                <path id="fa-p-cin-and2" class="wire-pulse hidden" d="M 290 320 L 340 320" />
+                <path id="fa-p-xor1-xor2" class="wire-pulse hidden" d="M 225 105 L 260 105 L 260 125 L 340 125" />
+                <path id="fa-p-xor1-and2" class="wire-pulse hidden" d="M 260 105 L 260 215 A 5 5 0 0 1 260 225 L 260 270 L 310 270 L 310 300 L 340 300" />
+                <path id="fa-p-and1-or" class="wire-pulse hidden" d="M 215 220 L 430 220 L 430 285 L 480 285" />
+                <path id="fa-p-and2-or" class="wire-pulse hidden" d="M 375 310 L 450 310 L 450 290 A 5 5 0 0 1 450 280 L 450 265 L 480 265" />
+                <path id="fa-p-xor2-sum" class="wire-pulse hidden" d="M 385 135 L 560 135" />
+                <path id="fa-p-or-carry" class="wire-pulse hidden" d="M 525 275 L 560 275" />
+              </svg>
+
+              <!-- VIEW 2: HIERARCHICAL BLOCK VIEW SVG (Hidden initially) -->
+              <svg id="fa-block-svg" class="logic-svg hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 450">
+                <rect width="100%" height="100%" fill="url(#schematic-grid)" />
+
+                <!-- Inputs -->
+                <g class="input-node" transform="translate(50, 100)">
+                  <text x="-35" y="5" fill="var(--text-bright)" font-family="JetBrains Mono" font-weight="700">A</text>
+                  <circle id="fa-block-in-a" class="terminal-node" cx="0" cy="0" r="8" />
+                  <foreignObject x="-30" y="-35" width="24" height="24">
+                    <button class="node-toggle" id="fa-block-switch-a">0</button>
+                  </foreignObject>
+                </g>
+                <g class="input-node" transform="translate(50, 150)">
+                  <text x="-35" y="5" fill="var(--text-bright)" font-family="JetBrains Mono" font-weight="700">B</text>
+                  <circle id="fa-block-in-b" class="terminal-node" cx="0" cy="0" r="8" />
+                  <foreignObject x="-30" y="-35" width="24" height="24">
+                    <button class="node-toggle" id="fa-block-switch-b">0</button>
+                  </foreignObject>
+                </g>
+                <g class="input-node" transform="translate(50, 270)">
+                  <text x="-35" y="5" fill="var(--text-bright)" font-family="JetBrains Mono" font-weight="700">C<tspan dy="4" font-size="9">in</tspan></text>
+                  <circle id="fa-block-in-cin" class="terminal-node" cx="0" cy="0" r="8" />
+                  <foreignObject x="-30" y="-35" width="24" height="24">
+                    <button class="node-toggle" id="fa-block-switch-cin">0</button>
+                  </foreignObject>
+                </g>
+
+                <!-- Half Adder 1 Block -->
+                <g id="fa-ha1-block" class="block-box" transform="translate(150, 70)">
+                  <rect class="block-rect" width="120" height="110" rx="6" />
+                  <text class="block-title" x="60" y="30" text-anchor="middle">Half Adder 1</text>
+                  <text class="pin-label" x="10" y="35">A</text>
+                  <text class="pin-label" x="10" y="85">B</text>
+                  <text class="pin-label" x="90" y="45" text-anchor="end">SUM</text>
+                  <text class="pin-label" x="90" y="90" text-anchor="end">CARRY</text>
+                </g>
+
+                <!-- Half Adder 2 Block -->
+                <g id="fa-ha2-block" class="block-box" transform="translate(340, 130)">
+                  <rect class="block-rect" width="120" height="110" rx="6" />
+                  <text class="block-title" x="60" y="30" text-anchor="middle">Half Adder 2</text>
+                  <text class="pin-label" x="10" y="35">A</text>
+                  <text class="pin-label" x="10" y="85">B</text>
+                  <text class="pin-label" x="90" y="45" text-anchor="end">SUM</text>
+                  <text class="pin-label" x="90" y="90" text-anchor="end">CARRY</text>
+                </g>
+
+                <!-- OR Gate -->
+                <g id="fa-block-or-gate" class="gate-group" transform="translate(500, 270)">
+                  <path class="gate-body" d="M 0 10 Q 15 25 0 40 Q 25 40 45 25 Q 25 10 0 10" />
+                  <text class="gate-label" x="18" y="29">OR</text>
+                  <circle class="terminal-node" cx="45" cy="25" r="5" />
+                </g>
+
+                <!-- Wiring -->
+                <path id="fa-wb-a" class="circuit-wire" d="M 50 100 L 150 100" />
+                <path id="fa-wb-b" class="circuit-wire" d="M 50 150 L 150 150" />
+                <path id="fa-wb-cin" class="circuit-wire" d="M 50 270 L 310 270 L 310 215 L 340 215" />
+
+                <path id="fa-wb-ha1s" class="circuit-wire" d="M 270 115 L 310 115 L 310 165 L 340 165" />
+                <path id="fa-wb-ha1c" class="circuit-wire" d="M 270 160 L 290 160 L 290 320 L 460 320 L 460 300 L 500 300" />
+                <path id="fa-wb-ha2c" class="circuit-wire" d="M 460 220 L 480 220 L 480 280 L 500 280" />
+
+                <path id="fa-wb-sum" class="circuit-wire" d="M 460 175 L 560 175" />
+                <path id="fa-wb-carry" class="circuit-wire" d="M 545 295 L 560 295" />
+
+                <!-- Outputs -->
+                <g class="output-node" transform="translate(560, 175)">
+                  <circle class="terminal-node" cx="0" cy="0" r="8" />
+                  <circle id="fa-led-sum-block" class="led-bulb" cx="40" cy="0" r="16" />
+                  <text x="70" y="5" class="led-label">SUM (S)</text>
+                </g>
+                <g class="output-node" transform="translate(560, 295)">
+                  <circle class="terminal-node" cx="0" cy="0" r="8" />
+                  <circle id="fa-led-carry-block" class="led-bulb" cx="40" cy="0" r="16" />
+                  <text x="70" y="5" class="led-label">C<tspan dy="4" font-size="9">out</tspan></text>
+                </g>
+
+                <!-- Signal pulses for block view -->
+                <path id="fa-pb-a" class="wire-pulse hidden" d="M 50 100 L 150 100" />
+                <path id="fa-pb-b" class="wire-pulse hidden" d="M 50 150 L 150 150" />
+                <path id="fa-pb-cin" class="wire-pulse hidden" d="M 50 270 L 310 270 L 310 215 L 340 215" />
+                <path id="fa-pb-ha1s" class="wire-pulse hidden" d="M 270 115 L 310 115 L 310 165 L 340 165" />
+                <path id="fa-pb-ha1c" class="wire-pulse hidden" d="M 270 160 L 290 160 L 290 320 L 460 320 L 460 300 L 500 300" />
+                <path id="fa-pb-ha2c" class="wire-pulse hidden" d="M 460 220 L 480 220 L 480 280 L 500 280" />
+                <path id="fa-pb-sum" class="wire-pulse hidden" d="M 460 175 L 560 175" />
+                <path id="fa-pb-carry" class="wire-pulse hidden" d="M 545 295 L 560 295" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Interactive Truth Table Column -->
+          <div class="card-column data-card">
+            <h3>Understanding Full Adders</h3>
+            <p class="description">A <strong>Full Adder</strong> adds three bits: inputs A, B, and a carry-in bit C<sub>in</sub> from a previous column. It outputs a <strong>SUM</strong> and a new carry-out <strong>C<sub>out</sub></strong>.</p>
+            <p>Look at the block view to see how we chain two Half Adders. The first adds A + B. The second adds the result to C<sub>in</sub>. An OR gate captures if either adder generated a carry.</p>
+
+            <h3>Interactive Truth Table (8 States)</h3>
+            <div class="table-container large-table">
+              <table id="fa-truth-table" class="truth-table">
+                <thead>
+                  <tr>
+                    <th>A</th>
+                    <th>B</th>
+                    <th>C<sub>in</sub></th>
+                    <th>SUM</th>
+                    <th>C<sub>out</sub></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-inputs="000"><td>0</td><td>0</td><td>0</td><td class="bold">0</td><td class="bold">0</td></tr>
+                  <tr data-inputs="001"><td>0</td><td>0</td><td>1</td><td class="bold">1</td><td class="bold">0</td></tr>
+                  <tr data-inputs="010"><td>0</td><td>1</td><td>0</td><td class="bold">1</td><td class="bold">0</td></tr>
+                  <tr data-inputs="011"><td>0</td><td>1</td><td>1</td><td class="bold">0</td><td class="bold">1</td></tr>
+                  <tr data-inputs="100"><td>1</td><td>0</td><td>0</td><td class="bold">1</td><td class="bold">0</td></tr>
+                  <tr data-inputs="101"><td>1</td><td>0</td><td>1</td><td class="bold">0</td><td class="bold">1</td></tr>
+                  <tr data-inputs="110"><td>1</td><td>1</td><td>0</td><td class="bold">0</td><td class="bold">1</td></tr>
+                  <tr data-inputs="111"><td>1</td><td>1</td><td>1</td><td class="bold">1</td><td class="bold">1</td></tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="step-footer mt-auto">
+              <button class="btn primary next-step-btn" data-next="module-kmap">Proceed to K-Map Lab &rarr;</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== MODULE 4: KARNAUGH MAP (K-MAP) LAB ==================== -->
+      <section id="module-kmap" class="lab-section">
+        <div class="section-header">
+          <h2>Module 4: The Karnaugh Map (K-Map) Lab</h2>
+          <span class="module-difficulty">Visual Minimization</span>
+        </div>
+        
+        <div class="split-layout">
+          <!-- Left Column: K-Map Visualizer -->
+          <div class="card-column logic-diagram-card large">
+            <div class="card-header-actions">
+              <h3>K-Map Playground</h3>
+              <div class="view-controls">
+                <button id="btn-kmap-view-ha" class="toggle-switch-btn active">Half Adder</button>
+                <button id="btn-kmap-view-fa" class="toggle-switch-btn">Full Adder</button>
+              </div>
+            </div>
+
+            <!-- Target selection controls -->
+            <div class="kmap-target-controls">
+              <span class="control-label">Target Output:</span>
+              <div id="kmap-targets-ha" class="target-buttons">
+                <button id="btn-kmap-target-ha-sum" class="tab-btn active">SUM (S)</button>
+                <button id="btn-kmap-target-ha-carry" class="tab-btn">CARRY (C)</button>
+              </div>
+              <div id="kmap-targets-fa" class="target-buttons hidden">
+                <button id="btn-kmap-target-fa-sum" class="tab-btn">SUM (S)</button>
+                <button id="btn-kmap-target-fa-carry" class="tab-btn active">CARRY (C<sub>out</sub>)</button>
+              </div>
+            </div>
+
+            <!-- K-Map workspace displaying the SVG K-maps -->
+            <div class="schematic-wrapper kmap-workspace">
+              <!-- Half Adder 2x2 Maps Side-By-Side -->
+              <svg id="kmap-ha-svg" class="logic-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 280">
+                <rect width="100%" height="100%" fill="url(#schematic-grid)" />
+
+                <!-- Left Map: SUM -->
+                <g transform="translate(20, 20)">
+                  <text x="70" y="20" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="var(--accent-cyan)" text-anchor="middle">SUM (S) K-Map</text>
+                  <!-- Labels A & B -->
+                  <text x="10" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)">B \ A</text>
+                  <text x="70" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">0</text>
+                  <text x="130" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">1</text>
+                  <text x="25" y="95" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">0</text>
+                  <text x="25" y="155" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">1</text>
+
+                  <!-- Cells -->
+                  <g class="kmap-cell-g" data-map="ha-sum" data-row="0" data-col="0">
+                    <rect class="kmap-cell-rect" x="40" y="70" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="70" y="105" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g" data-map="ha-sum" data-row="0" data-col="1">
+                    <rect class="kmap-cell-rect" x="100" y="70" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="130" y="105" text-anchor="middle">1</text>
+                  </g>
+                  <g class="kmap-cell-g" data-map="ha-sum" data-row="1" data-col="0">
+                    <rect class="kmap-cell-rect" x="40" y="130" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="70" y="165" text-anchor="middle">1</text>
+                  </g>
+                  <g class="kmap-cell-g" data-map="ha-sum" data-row="1" data-col="1">
+                    <rect class="kmap-cell-rect" x="100" y="130" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="130" y="165" text-anchor="middle">0</text>
+                  </g>
+
+                  <!-- SVG Dynamic Group Loops container -->
+                  <g id="kmap-ha-sum-loops" class="kmap-loops-g"></g>
+                </g>
+
+                <!-- Right Map: CARRY -->
+                <g transform="translate(280, 20)">
+                  <text x="70" y="20" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="var(--accent-amber)" text-anchor="middle">CARRY (C) K-Map</text>
+                  <!-- Labels A & B -->
+                  <text x="10" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)">B \ A</text>
+                  <text x="70" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">0</text>
+                  <text x="130" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">1</text>
+                  <text x="25" y="95" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">0</text>
+                  <text x="25" y="155" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">1</text>
+
+                  <!-- Cells -->
+                  <g class="kmap-cell-g" data-map="ha-carry" data-row="0" data-col="0">
+                    <rect class="kmap-cell-rect" x="40" y="70" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="70" y="105" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g" data-map="ha-carry" data-row="0" data-col="1">
+                    <rect class="kmap-cell-rect" x="100" y="70" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="130" y="105" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g" data-map="ha-carry" data-row="1" data-col="0">
+                    <rect class="kmap-cell-rect" x="40" y="130" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="70" y="165" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g" data-map="ha-carry" data-row="1" data-col="1">
+                    <rect class="kmap-cell-rect" x="100" y="130" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="130" y="165" text-anchor="middle">1</text>
+                  </g>
+
+                  <!-- SVG Dynamic Group Loops container -->
+                  <g id="kmap-ha-carry-loops" class="kmap-loops-g"></g>
+                </g>
+              </svg>
+
+              <!-- Full Adder 4x2 Map -->
+              <svg id="kmap-fa-svg" class="logic-svg hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 330">
+                <rect width="100%" height="100%" fill="url(#schematic-grid)" />
+
+                <g transform="translate(60, 20)">
+                  <text id="kmap-fa-title" x="180" y="20" font-family="JetBrains Mono" font-size="14" font-weight="700" fill="var(--accent-cyan)" text-anchor="middle">CARRY (Cout) K-Map</text>
+                  
+                  <!-- Column Labels -->
+                  <text x="60" y="50" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)">AB \ Cin</text>
+                  <text x="170" y="50" font-family="JetBrains Mono" font-size="11" font-weight="700" fill="var(--text-muted)" text-anchor="middle">0</text>
+                  <text x="270" y="50" font-family="JetBrains Mono" font-size="11" font-weight="700" fill="var(--text-muted)" text-anchor="middle">1</text>
+
+                  <!-- Row Labels -->
+                  <text x="80" y="95" font-family="JetBrains Mono" font-size="11" font-weight="700" fill="var(--text-muted)" text-anchor="end">00</text>
+                  <text x="80" y="155" font-family="JetBrains Mono" font-size="11" font-weight="700" fill="var(--text-muted)" text-anchor="end">01</text>
+                  <text x="80" y="215" font-family="JetBrains Mono" font-size="11" font-weight="700" fill="var(--text-muted)" text-anchor="end">11</text>
+                  <text x="80" y="275" font-family="JetBrains Mono" font-size="11" font-weight="700" fill="var(--text-muted)" text-anchor="end">10</text>
+
+                  <!-- Grid Cells -->
+                  <!-- Row 0 -->
+                  <g class="kmap-cell-g" data-map="fa" data-row="0" data-col="0">
+                    <rect class="kmap-cell-rect" x="120" y="65" width="100" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="170" y="102" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g" data-map="fa" data-row="0" data-col="1">
+                    <rect class="kmap-cell-rect" x="220" y="65" width="100" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="270" y="102" text-anchor="middle">0</text>
+                  </g>
+                  <!-- Row 1 -->
+                  <g class="kmap-cell-g" data-map="fa" data-row="1" data-col="0">
+                    <rect class="kmap-cell-rect" x="120" y="125" width="100" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="170" y="162" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g" data-map="fa" data-row="1" data-col="1">
+                    <rect class="kmap-cell-rect" x="220" y="125" width="100" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="270" y="162" text-anchor="middle">1</text>
+                  </g>
+                  <!-- Row 2 -->
+                  <g class="kmap-cell-g" data-map="fa" data-row="2" data-col="0">
+                    <rect class="kmap-cell-rect" x="120" y="185" width="100" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="170" y="222" text-anchor="middle">1</text>
+                  </g>
+                  <g class="kmap-cell-g" data-map="fa" data-row="2" data-col="1">
+                    <rect class="kmap-cell-rect" x="220" y="185" width="100" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="270" y="222" text-anchor="middle">1</text>
+                  </g>
+                  <!-- Row 3 -->
+                  <g class="kmap-cell-g" data-map="fa" data-row="3" data-col="0">
+                    <rect class="kmap-cell-rect" x="120" y="245" width="100" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="170" y="282" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g" data-map="fa" data-row="3" data-col="1">
+                    <rect class="kmap-cell-rect" x="220" y="245" width="100" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="270" y="282" text-anchor="middle">1</text>
+                  </g>
+
+                  <!-- SVG Dynamic Group Loops container -->
+                  <g id="kmap-fa-loops" class="kmap-loops-g"></g>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Right Column: Instructions, Autograder & Controls -->
+          <div class="card-column data-card">
+            <div class="card-header-actions">
+              <h3>K-Map Algebraic Solver</h3>
+              <div class="view-controls">
+                <button id="btn-kmap-mode-guided" class="toggle-switch-btn active">Guided</button>
+                <button id="btn-kmap-mode-practice" class="toggle-switch-btn">Practice</button>
+              </div>
+            </div>
+
+            <!-- Guided instruction panels -->
+            <div class="instructions-panel">
+              <h4 id="kmap-step-title">Guided Task</h4>
+              <p id="kmap-instructions" class="description">Select the cell(s) that represent the active CARRY outputs. Click cells to toggle their selection.</p>
+              <div id="kmap-alert-box" class="feedback-text mt-4"></div>
+            </div>
+
+            <!-- Grouping Action buttons -->
+            <div class="sandbox-tools mt-4">
+              <button id="btn-kmap-group" class="btn primary">Group Selection</button>
+              <button id="btn-kmap-clear" class="btn secondary">Clear Selection</button>
+              <button id="btn-kmap-reset" class="btn danger">Reset Loops</button>
+            </div>
+
+            <!-- Boolean Equation Builder Block -->
+            <div class="interactive-sandbox-preview mt-4">
+              <h4>Derived Boolean Equation</h4>
+              <div class="equation-builder-card">
+                <span id="kmap-eq-lhs" class="formula-lhs">C = </span>
+                <span id="kmap-eq-rhs" class="formula-rhs">...</span>
+              </div>
+            </div>
+
+            <!-- Practice Mode MCQ container (hidden initially) -->
+            <div id="kmap-practice-mcq-container" class="interactive-sandbox-preview hidden mt-4">
+              <h4>Practice Evaluation</h4>
+              <p class="hint">Define all groups first, then select the minimal Boolean expression representing this map:</p>
+              <div class="mcq-options-list" id="kmap-mcq-options">
+                <!-- Dynamically populated MCQ buttons -->
+              </div>
+              <button id="btn-kmap-submit-practice" class="btn primary full-width mt-4" disabled>Submit Equation Answer</button>
+            </div>
+
+            <!-- Circuit overlay toggle -->
+            <div class="toggle-row mt-4">
+              <label class="switch-container">
+                <input type="checkbox" id="kmap-circuit-overlay-toggle">
+                <span class="switch-slider"></span>
+              </label>
+              <span class="toggle-label-text">Overlay equations on circuit diagrams</span>
+            </div>
+
+            <div class="step-footer mt-auto">
+              <button class="btn primary next-step-btn" data-next="module-sandbox">Proceed to Sandbox Canvas &rarr;</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== MODULE 5: BUILD-IT-YOURSELF SANDBOX ==================== -->
+      <section id="module-sandbox" class="lab-section">
+        <div class="section-header">
+          <h2>Module 5: Drag-and-Drop Gate Sandbox</h2>
+          <span class="module-difficulty">Hands-On Practice</span>
+        </div>
+        <div class="sandbox-grid">
+          <!-- Left Panel: Gate Palette & Instructions -->
+          <div class="sandbox-controls">
+            <div class="instructions-panel">
+              <h3>Sandbox Mission</h3>
+              <p id="sandbox-goal-text">Construct a working <strong>Half Adder</strong>! Place gates on the grid and wire inputs to outputs. Complete the truth table to unlock.</p>
+              
+              <div class="mission-selector">
+                <button id="btn-mission-ha" class="tab-btn active">Mission: Half Adder</button>
+                <button id="btn-mission-fa" class="tab-btn">Mission: Full Adder</button>
+              </div>
+            </div>
+
+            <!-- Gate Palette -->
+            <div class="gate-palette-card">
+              <h4>Gate Palette</h4>
+              <p class="hint">Drag a gate onto the grid canvas on the right.</p>
+              <div class="palette-gates">
+                <div class="palette-item" draggable="true" data-gate-type="XOR">
+                  <div class="palette-icon xor-icon"></div>
+                  <span>XOR</span>
+                </div>
+                <div class="palette-item" draggable="true" data-gate-type="AND">
+                  <div class="palette-icon and-icon"></div>
+                  <span>AND</span>
+                </div>
+                <div class="palette-item" draggable="true" data-gate-type="OR">
+                  <div class="palette-icon or-icon"></div>
+                  <span>OR</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick tools -->
+            <div class="sandbox-tools">
+              <button id="btn-clear-sandbox" class="btn warning">Clear Canvas</button>
+              <button id="btn-delete-selected" class="btn danger disabled" disabled>Delete Selected</button>
+            </div>
+
+            <!-- Live Validation Table -->
+            <div class="live-validation-card">
+              <h4>Auto-Grader Status</h4>
+              <div id="sandbox-validation-progress" class="validation-progress">
+                <div class="val-stat-row">
+                  <span>Logic Equations:</span>
+                  <span id="sandbox-equation-status" class="status-badge error">INCOMPLETE</span>
+                </div>
+                <div class="val-table-status">
+                  <span class="val-headline">Truth Table Coverage:</span>
+                  <div class="mini-grid" id="sandbox-mini-table">
+                    <!-- Dynamic mini squares representing truth table states -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Canvas Grid -->
+          <div class="sandbox-canvas-container">
+            <div class="canvas-header">
+              <span class="status-indicator" id="canvas-status">Edit Mode - Draw wires by dragging from output pins (circles) to input pins.</span>
+              <span id="canvas-coordinates" class="coord-display">X: 0, Y: 0</span>
+            </div>
+
+            <!-- Grid container where nodes are interactive -->
+            <div class="sandbox-canvas-wrapper">
+              <div class="sandbox-relative-container" style="position: relative; width: 700px; height: 480px; flex-shrink: 0; margin: 0 auto;">
+                <canvas id="sandbox-canvas" width="700" height="480"></canvas>
+                
+                <div id="canvas-inputs-panel" class="canvas-side-panel inputs">
+                  <!-- Input nodes injected here -->
+                </div>
+                <div id="canvas-outputs-panel" class="canvas-side-panel outputs">
+                  <!-- Output LEDs injected here -->
+                </div>
+  
+                <!-- Success Confetti/Overlay -->
+                <div id="sandbox-success-overlay" class="canvas-overlay hidden">
+                  <div class="success-content">
+                    <div class="trophy-pulse">🏆</div>
+                    <h2>Circuit Complete!</h2>
+                    <p id="sandbox-success-msg">Your wiring successfully solves the Half Adder truth table!</p>
+                    <button id="btn-sandbox-success-close" class="btn primary">Continue</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="step-footer mt-4">
+          <button class="btn primary next-step-btn" data-next="module-ripple-carry">Proceed to Ripple Carry Playground &rarr;</button>
+        </div>
+      </section>
+
+      <!-- ==================== MODULE 6: RIPPLE CARRY PLAYGROUND ==================== -->
+      <section id="module-ripple-carry" class="lab-section">
+        <div class="section-header">
+          <h2>Module 6: 4-Bit Ripple-Carry Playground</h2>
+          <span class="module-difficulty">Advanced Logic</span>
+        </div>
+        <div class="section-card">
+          <div class="playground-intro">
+            <p>What happens when we want to add numbers larger than 1? We chain Full Adders together! The <strong>Carry-Out (C<sub>out</sub>)</strong> of each column connects directly to the <strong>Carry-In (C<sub>in</sub>)</strong> of the next column to the left.</p>
+            <p class="highlight-text">Watch the Carry bit "ripple" (propagate) leftwards, adding a physical gate delay at every stage!</p>
+          </div>
+
+          <!-- Ripple Carry Dashboard -->
+          <div class="ripple-dashboard">
+            <!-- Left inputs panel -->
+            <div class="ripple-inputs-panel">
+              <div class="input-binary-group">
+                <h3>Input Binary A</h3>
+                <div class="nibble-selector">
+                  <div class="bit-ctrl"><label>A₃</label><button id="btn-a3" class="nibble-toggle" data-bit="3">0</button></div>
+                  <div class="bit-ctrl"><label>A₂</label><button id="btn-a2" class="nibble-toggle" data-bit="2">0</button></div>
+                  <div class="bit-ctrl"><label>A₁</label><button id="btn-a1" class="nibble-toggle" data-bit="1">0</button></div>
+                  <div class="bit-ctrl"><label>A₀</label><button id="btn-a0" class="nibble-toggle" data-bit="0">0</button></div>
+                </div>
+              </div>
+
+              <div class="input-binary-group">
+                <h3>Input Binary B</h3>
+                <div class="nibble-selector">
+                  <div class="bit-ctrl"><label>B₃</label><button id="btn-b3" class="nibble-toggle" data-bit="3">0</button></div>
+                  <div class="bit-ctrl"><label>B₂</label><button id="btn-b2" class="nibble-toggle" data-bit="2">0</button></div>
+                  <div class="bit-ctrl"><label>B₁</label><button id="btn-b1" class="nibble-toggle" data-bit="1">0</button></div>
+                  <div class="bit-ctrl"><label>B₀</label><button id="btn-b0" class="nibble-toggle" data-bit="0">0</button></div>
+                </div>
+              </div>
+
+              <!-- Speed and trigger buttons -->
+              <div class="ripple-controls">
+                <div class="control-row">
+                  <label for="ripple-speed">Propagation Delay:</label>
+                  <select id="ripple-speed" class="custom-select">
+                    <option value="800">Slow (800ms / stage)</option>
+                    <option value="400" selected>Normal (400ms / stage)</option>
+                    <option value="150">Fast (150ms / stage)</option>
+                    <option value="0">Instant (No delay)</option>
+                  </select>
+                </div>
+                <button id="btn-ripple-calculate" class="btn primary full-width">Compute & Animate Propagation</button>
+              </div>
+            </div>
+
+            <!-- Right results display -->
+            <div class="ripple-math-card">
+              <h3>Decimal Calculation</h3>
+              <div class="math-board">
+                <div class="binary-formula">
+                  <div class="formula-row"><span class="val-label">A = </span><span id="formula-bin-a" class="bin-code">0000₂</span> <span id="formula-dec-a" class="dec-lbl">(0)</span></div>
+                  <div class="formula-row"><span class="val-label">+ B = </span><span id="formula-bin-b" class="bin-code">0000₂</span> <span id="formula-dec-b" class="dec-lbl">(0)</span></div>
+                  <hr>
+                  <div class="formula-row"><span class="val-label">Sum = </span><span id="formula-bin-sum" class="bin-code">00000₂</span> <span id="formula-dec-sum" class="dec-lbl">(0)</span></div>
+                </div>
+                <div id="ripple-overflow-alert" class="overflow-badge hidden">
+                  ⚠️ OVERFLOW DETECTED (5-Bit Output)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chain schematic visualizer -->
+          <div class="ripple-chain-wrapper">
+            <svg id="ripple-chain-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 240">
+              <rect width="100%" height="100%" fill="url(#schematic-grid)" />
+
+              <!-- STAGE 3 (MSB) -->
+              <g id="rc-stage-3" class="ripple-stage" transform="translate(70, 40)">
+                <rect class="stage-rect" width="130" height="120" rx="8" />
+                <text class="stage-title" x="65" y="25" text-anchor="middle">FA Stage 3 (MSB)</text>
+                <circle id="rc-node-a3" class="terminal-node" cx="30" cy="0" r="5" /><text x="30" y="-8" class="port-label">A₃</text>
+                <circle id="rc-node-b3" class="terminal-node" cx="100" cy="0" r="5" /><text x="100" y="-8" class="port-label">B₃</text>
+                <circle id="rc-node-cin3" class="terminal-node" cx="130" cy="60" r="5" /><text x="120" y="55" class="port-label">C₃</text>
+                <circle id="rc-node-cout3" class="terminal-node" cx="0" cy="60" r="5" /><text x="10" y="55" class="port-label">C₄</text>
+                <circle id="rc-node-s3" class="terminal-node" cx="65" cy="120" r="5" /><text x="65" y="135" class="port-label">S₃</text>
+              </g>
+
+              <!-- STAGE 2 -->
+              <g id="rc-stage-2" class="ripple-stage" transform="translate(260, 40)">
+                <rect class="stage-rect" width="130" height="120" rx="8" />
+                <text class="stage-title" x="65" y="25" text-anchor="middle">FA Stage 2</text>
+                <circle id="rc-node-a2" class="terminal-node" cx="30" cy="0" r="5" /><text x="30" y="-8" class="port-label">A₂</text>
+                <circle id="rc-node-b2" class="terminal-node" cx="100" cy="0" r="5" /><text x="100" y="-8" class="port-label">B₂</text>
+                <circle id="rc-node-cin2" class="terminal-node" cx="130" cy="60" r="5" /><text x="120" y="55" class="port-label">C₂</text>
+                <circle id="rc-node-cout2" class="terminal-node" cx="0" cy="60" r="5" /><text x="10" y="55" class="port-label">C₃</text>
+                <circle id="rc-node-s2" class="terminal-node" cx="65" cy="120" r="5" /><text x="65" y="135" class="port-label">S₂</text>
+              </g>
+
+              <!-- STAGE 1 -->
+              <g id="rc-stage-1" class="ripple-stage" transform="translate(450, 40)">
+                <rect class="stage-rect" width="130" height="120" rx="8" />
+                <text class="stage-title" x="65" y="25" text-anchor="middle">FA Stage 1</text>
+                <circle id="rc-node-a1" class="terminal-node" cx="30" cy="0" r="5" /><text x="30" y="-8" class="port-label">A₁</text>
+                <circle id="rc-node-b1" class="terminal-node" cx="100" cy="0" r="5" /><text x="100" y="-8" class="port-label">B₁</text>
+                <circle id="rc-node-cin1" class="terminal-node" cx="130" cy="60" r="5" /><text x="120" y="55" class="port-label">C₁</text>
+                <circle id="rc-node-cout1" class="terminal-node" cx="0" cy="60" r="5" /><text x="10" y="55" class="port-label">C₂</text>
+                <circle id="rc-node-s1" class="terminal-node" cx="65" cy="120" r="5" /><text x="65" y="135" class="port-label">S₁</text>
+              </g>
+
+              <!-- STAGE 0 (LSB) -->
+              <g id="rc-stage-0" class="ripple-stage" transform="translate(640, 40)">
+                <rect class="stage-rect" width="130" height="120" rx="8" />
+                <text class="stage-title" x="65" y="25" text-anchor="middle">FA Stage 0 (LSB)</text>
+                <circle id="rc-node-a0" class="terminal-node" cx="30" cy="0" r="5" /><text x="30" y="-8" class="port-label">A₀</text>
+                <circle id="rc-node-b0" class="terminal-node" cx="100" cy="0" r="5" /><text x="100" y="-8" class="port-label">B₀</text>
+                <circle id="rc-node-cin0" class="terminal-node" cx="130" cy="60" r="5" /><text x="125" y="55" class="port-label">C₀ (0)</text>
+                <circle id="rc-node-cout0" class="terminal-node" cx="0" cy="60" r="5" /><text x="10" y="55" class="port-label">C₁</text>
+                <circle id="rc-node-s0" class="terminal-node" cx="65" cy="120" r="5" /><text x="65" y="135" class="port-label">S₀</text>
+              </g>
+
+              <!-- Inter-stage carry links -->
+              <path id="rc-carry-wire-0-1" class="circuit-wire" d="M 640 100 Q 610 100 610 100 T 580 100" />
+              <path id="rc-carry-wire-1-2" class="circuit-wire" d="M 450 100 Q 420 100 420 100 T 390 100" />
+              <path id="rc-carry-wire-2-3" class="circuit-wire" d="M 260 100 Q 230 100 230 100 T 200 100" />
+              <path id="rc-carry-wire-3-ov" class="circuit-wire" d="M 70 100 L 25 100 L 25 210 L 50 210" />
+
+              <!-- Output Connections to bottom display -->
+              <path id="rc-s0-wire" class="circuit-wire" d="M 705 160 L 705 210" />
+              <path id="rc-s1-wire" class="circuit-wire" d="M 515 160 L 515 210" />
+              <path id="rc-s2-wire" class="circuit-wire" d="M 325 160 L 325 210" />
+              <path id="rc-s3-wire" class="circuit-wire" d="M 135 160 L 135 210" />
+
+              <!-- Output LED representations -->
+              <g transform="translate(50, 210)">
+                <circle id="rc-led-c4" class="led-bulb small overflow-led" cx="0" cy="0" r="10" />
+                <text x="15" y="4" class="led-label tiny">C₄ (Overflow)</text>
+              </g>
+              <g transform="translate(135, 210)">
+                <circle id="rc-led-s3" class="led-bulb small" cx="0" cy="0" r="10" />
+                <text x="15" y="4" class="led-label tiny">S₃</text>
+              </g>
+              <g transform="translate(325, 210)">
+                <circle id="rc-led-s2" class="led-bulb small" cx="0" cy="0" r="10" />
+                <text x="15" y="4" class="led-label tiny">S₂</text>
+              </g>
+              <g transform="translate(515, 210)">
+                <circle id="rc-led-s1" class="led-bulb small" cx="0" cy="0" r="10" />
+                <text x="15" y="4" class="led-label tiny">S₁</text>
+              </g>
+              <g transform="translate(705, 210)">
+                <circle id="rc-led-s0" class="led-bulb small" cx="0" cy="0" r="10" />
+                <text x="15" y="4" class="led-label tiny">S₀</text>
+              </g>
+
+              <!-- Pulses for Carry Propagation -->
+              <path id="rc-carry-pulse-0-1" class="wire-pulse hidden" d="M 640 100 Q 610 100 610 100 T 580 100" />
+              <path id="rc-carry-pulse-1-2" class="wire-pulse hidden" d="M 450 100 Q 420 100 420 100 T 390 100" />
+              <path id="rc-carry-pulse-2-3" class="wire-pulse hidden" d="M 260 100 Q 230 100 230 100 T 200 100" />
+              <path id="rc-carry-pulse-3-ov" class="wire-pulse hidden" d="M 70 100 L 25 100 L 25 210 L 50 210" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="step-footer mt-4">
+          <button class="btn primary next-step-btn" data-next="module-breadboard">Proceed to Breadboard View &rarr;</button>
+        </div>
+      </section>
+
+      <!-- ==================== MODULE 7: BREADBOARD / PHYSICAL IC ==================== -->
+      <section id="module-breadboard" class="lab-section">
+        <div class="section-header">
+          <h2>Module 7: Practical Breadboard & IC View</h2>
+          <span class="module-difficulty">Hardware Interface</span>
+        </div>
+        <div class="split-layout">
+          <!-- Breadboard panel -->
+          <div class="card-column logic-diagram-card large">
+            <div class="card-header-actions">
+              <h3 id="bb-lab-title">Breadboard Lab (Half Adder Mapping)</h3>
+              <div class="view-controls">
+                <button id="btn-bb-view-ha" class="toggle-switch-btn active">Half Adder</button>
+                <button id="btn-bb-view-fa" class="toggle-switch-btn">Full Adder</button>
+              </div>
+              <div class="signal-legend">
+                <span class="legend-item"><span class="legend-dot vcc"></span> +5V (VCC)</span>
+                <span class="legend-item"><span class="legend-dot gnd"></span> GND</span>
+              </div>
+            </div>
+
+            <div class="schematic-wrapper">
+              <!-- VIEW 1: HALF ADDER BREADBOARD SVG -->
+              <svg id="breadboard-ha-svg" class="logic-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 400">
+                <defs>
+                  <pattern id="bb-ha-holes" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <circle cx="5" cy="5" r="1.8" fill="#475569" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="#101524" />
+                <rect x="20" y="40" width="640" height="320" rx="10" fill="#dedede" stroke="#a0a0a0" stroke-width="3" />
+                
+                <!-- Contact holes overlay -->
+                <rect x="40" y="48" width="600" height="12" fill="url(#bb-ha-holes)" opacity="0.65" />
+                <rect x="40" y="63" width="600" height="12" fill="url(#bb-ha-holes)" opacity="0.65" />
+                <rect x="40" y="88" width="600" height="52" fill="url(#bb-ha-holes)" opacity="0.85" />
+                <rect x="40" y="248" width="600" height="52" fill="url(#bb-ha-holes)" opacity="0.85" />
+                <rect x="40" y="323" width="600" height="12" fill="url(#bb-ha-holes)" opacity="0.65" />
+                <rect x="40" y="338" width="600" height="12" fill="url(#bb-ha-holes)" opacity="0.65" />
+                
+                <line x1="40" y1="55" x2="640" y2="55" stroke="#cc3333" stroke-width="2" stroke-dasharray="10 5" />
+                <line x1="40" y1="70" x2="640" y2="70" stroke="#3333cc" stroke-width="2" stroke-dasharray="10 5" />
+                <line x1="40" y1="330" x2="640" y2="330" stroke="#cc3333" stroke-width="2" stroke-dasharray="10 5" />
+                <line x1="40" y1="345" x2="640" y2="345" stroke="#3333cc" stroke-width="2" stroke-dasharray="10 5" />
+
+                <!-- IC 1: 74LS86 (XOR) -->
+                <g id="ic-bb-ha-74ls86" class="ic-chip" transform="translate(180, 150)">
+                  <rect class="ic-body" width="130" height="70" rx="4" fill="#1f1f1f" stroke="#3a3a3a" />
+                  <rect class="ic-notch" x="0" y="25" width="8" height="20" rx="2" fill="#dedede" />
+                  <text class="ic-text" x="65" y="40" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#a0a0a0">74LS86 (XOR)</text>
+                  <!-- Pins top (8-14) -->
+                  <g class="ic-pins">
+                    <rect x="15" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="19" y="8" font-size="8" fill="#888">14</text>
+                    <rect x="33" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="37" y="8" font-size="8" fill="#888">13</text>
+                    <rect x="51" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="55" y="8" font-size="8" fill="#888">12</text>
+                    <rect x="69" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="73" y="8" font-size="8" fill="#888">11</text>
+                    <rect x="87" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="91" y="8" font-size="8" fill="#888">10</text>
+                    <rect x="105" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="109" y="8" font-size="8" fill="#888">9</text>
+                    <rect x="123" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="127" y="8" font-size="8" fill="#888">8</text>
+                  </g>
+                  <!-- Pins bottom (1-7) -->
+                  <g class="ic-pins">
+                    <rect x="15" y="69" width="8" height="7" fill="#c0c0c0" /><text x="19" y="65" font-size="8" fill="#888">1</text>
+                    <rect x="33" y="69" width="8" height="7" fill="#c0c0c0" /><text x="37" y="65" font-size="8" fill="#888">2</text>
+                    <rect x="51" y="69" width="8" height="7" fill="#c0c0c0" /><text x="55" y="65" font-size="8" fill="#888">3</text>
+                    <rect x="69" y="69" width="8" height="7" fill="#c0c0c0" /><text x="73" y="65" font-size="8" fill="#888">4</text>
+                    <rect x="87" y="69" width="8" height="7" fill="#c0c0c0" /><text x="91" y="65" font-size="8" fill="#888">5</text>
+                    <rect x="105" y="69" width="8" height="7" fill="#c0c0c0" /><text x="109" y="65" font-size="8" fill="#888">6</text>
+                    <rect x="123" y="69" width="8" height="7" fill="#c0c0c0" /><text x="127" y="65" font-size="8" fill="#888">7</text>
+                  </g>
+                </g>
+
+                <!-- IC 2: 74LS08 (AND) -->
+                <g id="ic-bb-ha-74ls08" class="ic-chip" transform="translate(370, 150)">
+                  <rect class="ic-body" width="130" height="70" rx="4" fill="#1f1f1f" stroke="#3a3a3a" />
+                  <rect class="ic-notch" x="0" y="25" width="8" height="20" rx="2" fill="#dedede" />
+                  <text class="ic-text" x="65" y="40" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#a0a0a0">74LS08 (AND)</text>
+                  <!-- Pins top (8-14) -->
+                  <g class="ic-pins">
+                    <rect x="15" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="19" y="8" font-size="8" fill="#888">14</text>
+                    <rect x="33" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="37" y="8" font-size="8" fill="#888">13</text>
+                    <rect x="51" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="55" y="8" font-size="8" fill="#888">12</text>
+                    <rect x="69" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="73" y="8" font-size="8" fill="#888">11</text>
+                    <rect x="87" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="91" y="8" font-size="8" fill="#888">10</text>
+                    <rect x="105" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="109" y="8" font-size="8" fill="#888">9</text>
+                    <rect x="123" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="127" y="8" font-size="8" fill="#888">8</text>
+                  </g>
+                  <!-- Pins bottom (1-7) -->
+                  <g class="ic-pins">
+                    <rect x="15" y="69" width="8" height="7" fill="#c0c0c0" /><text x="19" y="65" font-size="8" fill="#888">1</text>
+                    <rect x="33" y="69" width="8" height="7" fill="#c0c0c0" /><text x="37" y="65" font-size="8" fill="#888">2</text>
+                    <rect x="51" y="69" width="8" height="7" fill="#c0c0c0" /><text x="55" y="65" font-size="8" fill="#888">3</text>
+                    <rect x="69" y="69" width="8" height="7" fill="#c0c0c0" /><text x="73" y="65" font-size="8" fill="#888">4</text>
+                    <rect x="87" y="69" width="8" height="7" fill="#c0c0c0" /><text x="91" y="65" font-size="8" fill="#888">5</text>
+                    <rect x="105" y="69" width="8" height="7" fill="#c0c0c0" /><text x="109" y="65" font-size="8" fill="#888">6</text>
+                    <rect x="123" y="69" width="8" height="7" fill="#c0c0c0" /><text x="127" y="65" font-size="8" fill="#888">7</text>
+                  </g>
+                </g>
+
+                <!-- Switched Input Nodes & Wires on Breadboard -->
+                <g class="bb-switch" transform="translate(60, 240)">
+                  <circle cx="0" cy="0" r="10" fill="#444" stroke="#777" />
+                  <circle id="bb-ha-switch-a-knob" cx="0" cy="0" r="5" fill="#aaa" />
+                  <text x="-35" y="4" font-family="JetBrains Mono" font-weight="700" fill="#fff" font-size="11">A</text>
+                </g>
+
+                <g class="bb-switch" transform="translate(100, 240)">
+                  <circle cx="0" cy="0" r="10" fill="#444" stroke="#777" />
+                  <circle id="bb-ha-switch-b-knob" cx="0" cy="0" r="5" fill="#aaa" />
+                  <text x="-35" y="4" font-family="JetBrains Mono" font-weight="700" fill="#fff" font-size="11">B</text>
+                </g>
+
+                <!-- VCC wires -->
+                <path class="bb-wire vcc-wire" d="M 195 55 L 195 144" />
+                <path class="bb-wire vcc-wire" d="M 385 55 L 385 144" />
+                
+                <!-- GND wires -->
+                <path class="bb-wire gnd-wire" d="M 303 345 L 303 225" />
+                <path class="bb-wire gnd-wire" d="M 493 345 L 493 225" />
+
+                <!-- Logic Wire A: Switch A -> 74LS86 Pin 1 & 74LS08 Pin 1 -->
+                <path id="bb-ha-wire-a1" class="bb-wire logic-wire" d="M 60 240 L 60 120 L 195 120 L 195 225" />
+                <path id="bb-ha-wire-a2" class="bb-wire logic-wire" d="M 195 120 L 385 120 L 385 225" />
+
+                <!-- Logic Wire B: Switch B -> 74LS86 Pin 2 & 74LS08 Pin 2 -->
+                <path id="bb-ha-wire-b1" class="bb-wire logic-wire" d="M 100 240 L 100 130 L 213 130 L 213 225" />
+                <path id="bb-ha-wire-b2" class="bb-wire logic-wire" d="M 213 130 L 403 130 L 403 225" />
+
+                <!-- Logic Wire SUM: 74LS86 Pin 3 -> LED SUM -->
+                <path id="bb-ha-wire-sum" class="bb-wire logic-wire" d="M 231 225 L 231 280 L 550 280" />
+                <!-- Logic Wire CARRY: 74LS08 Pin 3 -> LED CARRY -->
+                <path id="bb-ha-wire-carry" class="bb-wire logic-wire" d="M 421 225 L 421 300 L 590 300" />
+
+                <!-- Output LEDs -->
+                <g class="bb-led" transform="translate(550, 280)">
+                  <circle id="bb-ha-led-sum" class="led-bulb small" cx="0" cy="0" r="8" />
+                  <text x="-15" y="-12" class="led-label tiny">SUM</text>
+                </g>
+                <g class="bb-led" transform="translate(590, 300)">
+                  <circle id="bb-ha-led-carry" class="led-bulb small" cx="0" cy="0" r="8" />
+                  <text x="-15" y="-12" class="led-label tiny">CARRY</text>
+                </g>
+              </svg>
+
+              <!-- VIEW 2: FULL ADDER BREADBOARD SVG -->
+              <svg id="breadboard-fa-svg" class="logic-svg hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 400">
+                <defs>
+                  <pattern id="bb-fa-holes" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <circle cx="5" cy="5" r="1.8" fill="#475569" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="#101524" />
+                <rect x="20" y="40" width="700" height="320" rx="10" fill="#dedede" stroke="#a0a0a0" stroke-width="3" />
+                
+                <!-- Contact holes overlay -->
+                <rect x="40" y="48" width="660" height="12" fill="url(#bb-fa-holes)" opacity="0.65" />
+                <rect x="40" y="63" width="660" height="12" fill="url(#bb-fa-holes)" opacity="0.65" />
+                <rect x="40" y="88" width="660" height="52" fill="url(#bb-fa-holes)" opacity="0.85" />
+                <rect x="40" y="248" width="660" height="52" fill="url(#bb-fa-holes)" opacity="0.85" />
+                <rect x="40" y="323" width="660" height="12" fill="url(#bb-fa-holes)" opacity="0.65" />
+                <rect x="40" y="338" width="660" height="12" fill="url(#bb-fa-holes)" opacity="0.65" />
+                
+                <line x1="40" y1="55" x2="700" y2="55" stroke="#cc3333" stroke-width="2" stroke-dasharray="10 5" />
+                <line x1="40" y1="70" x2="700" y2="70" stroke="#3333cc" stroke-width="2" stroke-dasharray="10 5" />
+                <line x1="40" y1="330" x2="700" y2="330" stroke="#cc3333" stroke-width="2" stroke-dasharray="10 5" />
+                <line x1="40" y1="345" x2="700" y2="345" stroke="#3333cc" stroke-width="2" stroke-dasharray="10 5" />
+
+                <!-- IC 1: 74LS86 (XOR) at 170, 150 -->
+                <g id="ic-bb-fa-74ls86" class="ic-chip" transform="translate(170, 150)">
+                  <rect class="ic-body" width="130" height="70" rx="4" fill="#1f1f1f" stroke="#3a3a3a" />
+                  <rect class="ic-notch" x="0" y="25" width="8" height="20" rx="2" fill="#dedede" />
+                  <text class="ic-text" x="65" y="40" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#a0a0a0">74LS86 (XOR)</text>
+                  <g class="ic-pins">
+                    <rect x="15" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="19" y="8" font-size="8" fill="#888">14</text>
+                    <rect x="33" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="37" y="8" font-size="8" fill="#888">13</text>
+                    <rect x="51" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="55" y="8" font-size="8" fill="#888">12</text>
+                    <rect x="69" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="73" y="8" font-size="8" fill="#888">11</text>
+                    <rect x="87" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="91" y="8" font-size="8" fill="#888">10</text>
+                    <rect x="105" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="109" y="8" font-size="8" fill="#888">9</text>
+                    <rect x="123" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="127" y="8" font-size="8" fill="#888">8</text>
+                  </g>
+                  <g class="ic-pins">
+                    <rect x="15" y="69" width="8" height="7" fill="#c0c0c0" /><text x="19" y="65" font-size="8" fill="#888">1</text>
+                    <rect x="33" y="69" width="8" height="7" fill="#c0c0c0" /><text x="37" y="65" font-size="8" fill="#888">2</text>
+                    <rect x="51" y="69" width="8" height="7" fill="#c0c0c0" /><text x="55" y="65" font-size="8" fill="#888">3</text>
+                    <rect x="69" y="69" width="8" height="7" fill="#c0c0c0" /><text x="73" y="65" font-size="8" fill="#888">4</text>
+                    <rect x="87" y="69" width="8" height="7" fill="#c0c0c0" /><text x="91" y="65" font-size="8" fill="#888">5</text>
+                    <rect x="105" y="69" width="8" height="7" fill="#c0c0c0" /><text x="109" y="65" font-size="8" fill="#888">6</text>
+                    <rect x="123" y="69" width="8" height="7" fill="#c0c0c0" /><text x="127" y="65" font-size="8" fill="#888">7</text>
+                  </g>
+                </g>
+
+                <!-- IC 2: 74LS08 (AND) at 340, 150 -->
+                <g id="ic-bb-fa-74ls08" class="ic-chip" transform="translate(340, 150)">
+                  <rect class="ic-body" width="130" height="70" rx="4" fill="#1f1f1f" stroke="#3a3a3a" />
+                  <rect class="ic-notch" x="0" y="25" width="8" height="20" rx="2" fill="#dedede" />
+                  <text class="ic-text" x="65" y="40" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#a0a0a0">74LS08 (AND)</text>
+                  <g class="ic-pins">
+                    <rect x="15" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="19" y="8" font-size="8" fill="#888">14</text>
+                    <rect x="33" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="37" y="8" font-size="8" fill="#888">13</text>
+                    <rect x="51" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="55" y="8" font-size="8" fill="#888">12</text>
+                    <rect x="69" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="73" y="8" font-size="8" fill="#888">11</text>
+                    <rect x="87" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="91" y="8" font-size="8" fill="#888">10</text>
+                    <rect x="105" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="109" y="8" font-size="8" fill="#888">9</text>
+                    <rect x="123" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="127" y="8" font-size="8" fill="#888">8</text>
+                  </g>
+                  <g class="ic-pins">
+                    <rect x="15" y="69" width="8" height="7" fill="#c0c0c0" /><text x="19" y="65" font-size="8" fill="#888">1</text>
+                    <rect x="33" y="69" width="8" height="7" fill="#c0c0c0" /><text x="37" y="65" font-size="8" fill="#888">2</text>
+                    <rect x="51" y="69" width="8" height="7" fill="#c0c0c0" /><text x="55" y="65" font-size="8" fill="#888">3</text>
+                    <rect x="69" y="69" width="8" height="7" fill="#c0c0c0" /><text x="73" y="65" font-size="8" fill="#888">4</text>
+                    <rect x="87" y="69" width="8" height="7" fill="#c0c0c0" /><text x="91" y="65" font-size="8" fill="#888">5</text>
+                    <rect x="105" y="69" width="8" height="7" fill="#c0c0c0" /><text x="109" y="65" font-size="8" fill="#888">6</text>
+                    <rect x="123" y="69" width="8" height="7" fill="#c0c0c0" /><text x="127" y="65" font-size="8" fill="#888">7</text>
+                  </g>
+                </g>
+
+                <!-- IC 3: 74LS32 (OR) at 510, 150 -->
+                <g id="ic-bb-fa-74ls32" class="ic-chip" transform="translate(510, 150)">
+                  <rect class="ic-body" width="130" height="70" rx="4" fill="#1f1f1f" stroke="#3a3a3a" />
+                  <rect class="ic-notch" x="0" y="25" width="8" height="20" rx="2" fill="#dedede" />
+                  <text class="ic-text" x="65" y="40" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#a0a0a0">74LS32 (OR)</text>
+                  <g class="ic-pins">
+                    <rect x="15" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="19" y="8" font-size="8" fill="#888">14</text>
+                    <rect x="33" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="37" y="8" font-size="8" fill="#888">13</text>
+                    <rect x="51" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="55" y="8" font-size="8" fill="#888">12</text>
+                    <rect x="69" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="73" y="8" font-size="8" fill="#888">11</text>
+                    <rect x="87" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="91" y="8" font-size="8" fill="#888">10</text>
+                    <rect x="105" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="109" y="8" font-size="8" fill="#888">9</text>
+                    <rect x="123" y="-6" width="8" height="7" fill="#c0c0c0" /><text x="127" y="8" font-size="8" fill="#888">8</text>
+                  </g>
+                  <g class="ic-pins">
+                    <rect x="15" y="69" width="8" height="7" fill="#c0c0c0" /><text x="19" y="65" font-size="8" fill="#888">1</text>
+                    <rect x="33" y="69" width="8" height="7" fill="#c0c0c0" /><text x="37" y="65" font-size="8" fill="#888">2</text>
+                    <rect x="51" y="69" width="8" height="7" fill="#c0c0c0" /><text x="55" y="65" font-size="8" fill="#888">3</text>
+                    <rect x="69" y="69" width="8" height="7" fill="#c0c0c0" /><text x="73" y="65" font-size="8" fill="#888">4</text>
+                    <rect x="87" y="69" width="8" height="7" fill="#c0c0c0" /><text x="91" y="65" font-size="8" fill="#888">5</text>
+                    <rect x="105" y="69" width="8" height="7" fill="#c0c0c0" /><text x="109" y="65" font-size="8" fill="#888">6</text>
+                    <rect x="123" y="69" width="8" height="7" fill="#c0c0c0" /><text x="127" y="65" font-size="8" fill="#888">7</text>
+                  </g>
+                </g>
+
+                <!-- Input Switches -->
+                <g class="bb-switch" transform="translate(50, 250)">
+                  <circle cx="0" cy="0" r="10" fill="#444" stroke="#777" />
+                  <circle id="bb-fa-switch-a-knob" cx="0" cy="0" r="5" fill="#aaa" />
+                  <text x="-35" y="4" font-family="JetBrains Mono" font-weight="700" fill="#fff" font-size="11">A</text>
+                </g>
+                <g class="bb-switch" transform="translate(85, 250)">
+                  <circle cx="0" cy="0" r="10" fill="#444" stroke="#777" />
+                  <circle id="bb-fa-switch-b-knob" cx="0" cy="0" r="5" fill="#aaa" />
+                  <text x="-35" y="4" font-family="JetBrains Mono" font-weight="700" fill="#fff" font-size="11">B</text>
+                </g>
+                <g class="bb-switch" transform="translate(120, 250)">
+                  <circle cx="0" cy="0" r="10" fill="#444" stroke="#777" />
+                  <circle id="bb-fa-switch-cin-knob" cx="0" cy="0" r="5" fill="#aaa" />
+                  <text x="-35" y="4" font-family="JetBrains Mono" font-weight="700" fill="#fff" font-size="11">C<tspan dy="3" font-size="9">in</tspan></text>
+                </g>
+
+                <!-- Power Wires -->
+                <path class="bb-wire vcc-wire" d="M 185 55 L 185 144" />
+                <path class="bb-wire vcc-wire" d="M 355 55 L 355 144" />
+                <path class="bb-wire vcc-wire" d="M 525 55 L 525 144" />
+                
+                <path class="bb-wire gnd-wire" d="M 293 345 L 293 225" />
+                <path class="bb-wire gnd-wire" d="M 463 345 L 463 225" />
+                <path class="bb-wire gnd-wire" d="M 633 345 L 633 225" />
+
+                <!-- Logic Wires for Full Adder -->
+                <path id="bb-fa-wire-a1" class="bb-wire logic-wire" d="M 50 250 L 50 110 L 185 110 L 185 225" />
+                <path id="bb-fa-wire-a2" class="bb-wire logic-wire" d="M 185 110 L 355 110 L 355 225" />
+
+                <path id="bb-fa-wire-b1" class="bb-wire logic-wire" d="M 85 250 L 85 120 L 203 120 L 203 225" />
+                <path id="bb-fa-wire-b2" class="bb-wire logic-wire" d="M 203 120 L 373 120 L 373 225" />
+
+                <path id="bb-fa-wire-xor1-xor4" class="bb-wire logic-wire" d="M 221 225 L 221 290 L 239 290 L 239 225" />
+                <path id="bb-fa-wire-xor1-and4" class="bb-wire logic-wire" d="M 239 290 L 409 290 L 409 225" />
+
+                <path id="bb-fa-wire-cin1" class="bb-wire logic-wire" d="M 120 250 L 120 130 L 257 130 L 257 225" />
+                <path id="bb-fa-wire-cin2" class="bb-wire logic-wire" d="M 257 130 L 427 130 L 427 225" />
+
+                <path id="bb-fa-wire-sum" class="bb-wire logic-wire" d="M 275 225 L 275 310 L 660 310 L 660 270" />
+
+                <path id="bb-fa-wire-and1" class="bb-wire logic-wire" d="M 391 225 L 391 100 L 525 100 L 525 225" />
+                <path id="bb-fa-wire-and2" class="bb-wire logic-wire" d="M 445 225 L 445 110 L 543 110 L 543 225" />
+
+                <path id="bb-fa-wire-carry" class="bb-wire logic-wire" d="M 561 225 L 561 300 L 695 300 L 695 290" />
+
+                <!-- Output LEDs -->
+                <g class="bb-led" transform="translate(660, 270)">
+                  <circle id="bb-fa-led-sum" class="led-bulb small" cx="0" cy="0" r="8" />
+                  <text x="-15" y="-12" class="led-label tiny">SUM</text>
+                </g>
+                <g class="bb-led" transform="translate(695, 290)">
+                  <circle id="bb-fa-led-carry" class="led-bulb small" cx="0" cy="0" r="8" />
+                  <text x="-15" y="-12" class="led-label tiny">C<sub>out</sub></text>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Explanation panel -->
+          <div class="card-column data-card">
+            <h3>Mapping to Real Chips</h3>
+            <p class="description">In a physical electronics lab, logic gates aren't individual components. Instead, you use Integrated Circuit (IC) chips, usually from the <strong>7400-series</strong> TTL family.</p>
+            <ul>
+              <li><strong>74LS86 (XOR)</strong>: Contains 4 independent XOR gates. Pins 1 & 2 are inputs, Pin 3 is output for Gate 1. Pins 4 & 5 are inputs, Pin 6 is output for Gate 2.</li>
+              <li><strong>74LS08 (AND)</strong>: Contains 4 independent AND gates. Pins 1 & 2 are inputs, Pin 3 is output for Gate 1. Pins 4 & 5 are inputs, Pin 6 is output for Gate 2.</li>
+              <li id="bb-info-or" class="hidden"><strong>74LS32 (OR)</strong>: Contains 4 independent OR gates. Pins 1 & 2 are inputs, Pin 3 is output for Gate 1.</li>
+              <li><strong>Powering ICs</strong>: Every chip requires power connected to Pin 14 (V<sub>CC</sub>, +5V) and ground connected to Pin 7 (GND).</li>
+            </ul>
+
+            <div class="interactive-sandbox-preview">
+              <h4>Interactive Test Swapping</h4>
+              <p class="hint">Toggle the breadboard switches below or click them directly on the breadboard vector to observe chip pin signal routing.</p>
+              <div class="bb-toggles">
+                <button id="bb-btn-switch-a" class="btn secondary">Toggle Switch A (0)</button>
+                <button id="bb-btn-switch-b" class="btn secondary">Toggle Switch B (0)</button>
+                <button id="bb-btn-switch-cin" class="btn secondary hidden">Toggle Switch C<sub>in</sub> (0)</button>
+              </div>
+            </div>
+
+            <div class="step-footer mt-auto">
+              <button class="btn primary next-step-btn" data-next="module-arcade">Proceed to Logic Arcade &rarr;</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== MODULE 8: LOGIC ARCADE (PRACTICE) ==================== -->
+      <section id="module-arcade" class="lab-section" style="user-select: none;">
+        <div class="section-header">
+          <h2>Module 8: Formal Assessment Protocol</h2>
+          <span class="module-difficulty font-mono">Exam Mode</span>
+        </div>
+
+        <!-- Floating Exam Status Bar (Visible only during active exam) -->
+        <div id="exam-status-bar" class="exam-status-bar hidden">
+          <div class="exam-status-item"><span class="lbl">TIME REMAINING:</span> <span id="exam-timer-val" class="val gold">10:00</span></div>
+          <div class="exam-status-item"><span class="lbl">SECURITY FAULTS:</span> <span id="exam-violations-val" class="val red">0 / 3</span></div>
+          <div class="exam-status-item"><span class="lbl">SCORE:</span> <span id="exam-current-score" class="val cyan">0</span></div>
+        </div>
+
+        <!-- Exam Initiation Panel -->
+        <div id="exam-initiation-panel" class="card exam-init-card">
+          <div class="exam-header-icon">🛡️</div>
+          <h3>Initiate Assessment Protocol</h3>
+          <p class="description">You are about to start the formal logic adder exam. This test evaluates your understanding of Half Adders, Full Adders, and K-Map simplification under strict proctored guidelines.</p>
+          
+          <div class="warning-box mt-3 mb-4">
+            <h4 class="text-amber">⚠️ EXAM SECURITY PROTOCOL IN EFFECT:</h4>
+            <ul>
+              <li><strong>10-Minute Time Limit</strong>: The test terminates automatically when the countdown expires.</li>
+              <li><strong>Mandatory Fullscreen</strong>: Exiting fullscreen mode registers a security violation.</li>
+              <li><strong>Window Focus Enforcement</strong>: Switching tabs, minimizing the browser, or losing window focus is strictly prohibited.</li>
+              <li><strong>No Screenshots or Copying</strong>: Print screen, hotkeys, copying text, or right-clicking are blocked.</li>
+              <li><strong>Three-Strike Policy</strong>: Accumulating <strong>more than 3 violations</strong> instantly terminates the exam. Your score at termination will be submitted as your final score.</li>
+            </ul>
+          </div>
+          
+          <button id="btn-start-exam" class="btn warning full-width">Start Exam & Enter Fullscreen</button>
+        </div>
+
+        <!-- Warning Popup Modal (Used for security warnings) -->
+        <div id="exam-warning-modal" class="modal-overlay hidden">
+          <div class="modal-content exam-fault-content">
+            <span class="fault-icon">⚠️</span>
+            <h3>SECURITY VIOLATION DETECTED</h3>
+            <p id="exam-warning-msg">You have exited fullscreen mode or switched tabs. This has been logged as a security fault!</p>
+            <div class="fault-counter-box font-mono">
+              FAULTS: <span id="exam-violations-count">1 / 3</span>
+            </div>
+            <p class="warning-text">Exceeding 3 security faults will immediately terminate your exam and submit your last score!</p>
+            <button id="btn-resume-exam" class="btn warning mt-4">Restore Fullscreen & Resume</button>
+          </div>
+        </div>
+
+        <!-- Exam Result Dossier Overlay -->
+        <div id="exam-result-overlay" class="card exam-result-card hidden">
+          <div class="result-icon-badge" id="exam-result-badge">🏆</div>
+          <h3 id="exam-result-title">Exam Completed Successfully</h3>
+          <p id="exam-result-msg" class="description">Your assessment details have been written to the registry database.</p>
+          
+          <div class="result-stats-dossier font-mono">
+            <div class="stat-row"><span>FINAL SCORE:</span> <strong id="exam-res-score">0</strong></div>
+            <div class="stat-row"><span>ACCURACY RATE:</span> <strong id="exam-res-accuracy">100%</strong></div>
+            <div class="stat-row"><span>TOTAL CLICKS:</span> <strong id="exam-res-clicks">0</strong></div>
+            <div class="stat-row"><span>SECURITY FAULTS:</span> <strong id="exam-res-faults" class="text-amber">0</strong></div>
+          </div>
+
+          <div class="result-badge-awarded mt-3" id="exam-res-badge-awarded">
+            <!-- Badge display -->
+          </div>
+
+          <button id="btn-finish-exam-return" class="btn primary mt-4">Submit Result and Return to Roster</button>
+        </div>
+
+        <!-- Original Arcade Container (Hidden initially until exam starts) -->
+        <div id="arcade-main-container" class="arcade-grid hidden">
+          <!-- Game Mode Selector -->
+          <div class="arcade-modes-card">
+            <h3>Select a Practice Mission</h3>
+            <div class="mode-buttons-list">
+              <button id="btn-mode-predict" class="mode-select-btn active">
+                <span class="mode-icon">⚡</span>
+                <div class="mode-info">
+                  <h4>Predict the Output</h4>
+                  <p>Read random inputs and toggle SUM/CARRY LEDs fast!</p>
+                </div>
+              </button>
+              <button id="btn-mode-table" class="mode-select-btn">
+                <span class="mode-icon">📊</span>
+                <div class="mode-info">
+                  <h4>Truth Table Fill-in</h4>
+                  <p>Solve missing cells. Instantly graded.</p>
+                </div>
+              </button>
+              <button id="btn-mode-time" class="mode-select-btn">
+                <span class="mode-icon">⏱️</span>
+                <div class="mode-info">
+                  <h4>Timed Challenge</h4>
+                  <p>Add binary columns against the clock. Streak multiplier!</p>
+                </div>
+              </button>
+            </div>
+
+            <!-- Global Score status -->
+            <div class="arcade-stats-panel">
+              <div class="arcade-stat-box">
+                <span class="lbl">STREAK</span>
+                <span id="arcade-streak" class="val gold">0</span>
+              </div>
+              <div class="arcade-stat-box">
+                <span class="lbl">HIGH SCORE</span>
+                <span id="arcade-highscore" class="val cyan">0</span>
+              </div>
+              <div class="arcade-stat-box">
+                <span class="lbl">TOTAL SCORE</span>
+                <span id="arcade-score" class="val">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Game Space -->
+          <div class="arcade-playground-card">
+            
+            <!-- GAME MODE 1: PREDICT OUTPUT PANEL -->
+            <div id="game-panel-predict" class="game-panel active">
+              <h3>Predict the Output</h3>
+              <p class="hint">Look at the inputs below, calculate the outputs, and click the correct LEDs. Press "Submit" to check.</p>
+              
+              <div class="predict-layout">
+                <div class="circuit-stimulus">
+                  <div class="gate-type-badge" id="predict-gate-type">HALF ADDER</div>
+                  <div class="stimulus-inputs">
+                    <div class="stimulus-bit">Input A: <span id="predict-val-a" class="bit-text">1</span></div>
+                    <div class="stimulus-bit">Input B: <span id="predict-val-b" class="bit-text">0</span></div>
+                    <div class="stimulus-bit" id="predict-cin-row">Input C<sub>in</sub>: <span id="predict-val-cin" class="bit-text">0</span></div>
+                  </div>
+                </div>
+
+                <div class="interactive-prediction">
+                  <div class="predict-led-box">
+                    <button class="predict-led-btn" id="btn-predict-s">
+                      <span class="led-lens" id="predict-lens-s"></span>
+                      <span class="led-txt">SUM (S)</span>
+                      <span id="predict-val-s-lbl" class="btn-val">0</span>
+                    </button>
+                    <button class="predict-led-btn" id="btn-predict-c">
+                      <span class="led-lens" id="predict-lens-c"></span>
+                      <span class="led-txt">CARRY (C)</span>
+                      <span id="predict-val-c-lbl" class="btn-val">0</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Game Actions -->
+              <div class="game-footer">
+                <div id="predict-feedback-msg" class="feedback-text"></div>
+                <button id="btn-predict-submit" class="btn primary">Check Answer</button>
+                <button id="btn-predict-next" class="btn secondary hidden">Next Challenge &rarr;</button>
+              </div>
+            </div>
+
+            <!-- GAME MODE 2: TRUTH TABLE FILL-IN -->
+            <div id="game-panel-table" class="game-panel">
+              <h3>Truth Table Completion</h3>
+              <p class="hint">Click the blank cells (marked with ?) to cycle between 0 and 1. Once all cells are set, click "Verify Table".</p>
+
+              <div class="table-completion-wrapper">
+                <table class="truth-table editable-table" id="arcade-fill-table">
+                  <!-- Injected via Javascript -->
+                </table>
+              </div>
+
+              <div class="game-footer">
+                <div id="table-feedback-msg" class="feedback-text"></div>
+                <button id="btn-table-verify" class="btn primary">Verify Table</button>
+                <button id="btn-table-new" class="btn secondary">Get New Table</button>
+              </div>
+            </div>
+
+            <!-- GAME MODE 3: TIMED CHALLENGE -->
+            <div id="game-panel-time" class="game-panel">
+              <div class="time-header">
+                <h3>Timed Binary Sprint</h3>
+                <div class="timer-badge">TIME LEFT: <span id="time-left-sec" class="danger">30</span>s</div>
+              </div>
+              <p class="hint">Speed round! Select the outputs as fast as possible. Correct streaks yield massive multipliers!</p>
+
+              <div class="timed-question-container">
+                <div class="timed-question">
+                  <span id="timed-expr-a">1</span> + <span id="timed-expr-b">1</span> + <span id="timed-expr-cin">0</span>
+                </div>
+                <div class="timed-choices">
+                  <button class="choice-btn" data-s="0" data-c="0">S=0, C=0</button>
+                  <button class="choice-btn" data-s="1" data-c="0">S=1, C=0</button>
+                  <button class="choice-btn" data-s="0" data-c="1">S=0, C=1</button>
+                  <button class="choice-btn" data-s="1" data-c="1">S=1, C=1</button>
+                </div>
+              </div>
+
+              <div class="game-footer">
+                <div id="time-feedback" class="feedback-text"></div>
+                <button id="btn-time-start" class="btn primary">Start Timed Run</button>
+              </div>
+            </div>
+
+          </div>
+        </div> <!-- closing #arcade-main-container -->
+
+        <div class="step-footer mt-4" id="arcade-step-footer">
+          <button class="btn primary next-step-btn" data-next="module-mastery">View Mastery Summary &rarr;</button>
+        </div>
+      </section>
+
+      <!-- ==================== MODULE 9: MASTERY SUMMARY ==================== -->
+      <section id="module-mastery" class="lab-section">
+        <div class="section-header">
+          <h2>Module 9: Mastery Dashboard</h2>
+          <span class="module-difficulty">Final Report</span>
+        </div>
+        <div class="mastery-container">
+          <div class="mastery-summary-card">
+            <div class="avatar-trophy">🎓</div>
+            <h2>Logic Lab Mastery Certificate</h2>
+            <p>You have interacted with all core adding models, observed propagation delays, and solved hardware wire configurations.</p>
+            
+            <div class="mastery-badges">
+              <div class="badge-item locked" id="badge-intro">
+                <span class="badge-icon">💡</span>
+                <span class="badge-title">Carry Explorer</span>
+                <span class="badge-desc">Complete Module 1</span>
+              </div>
+              <div class="badge-item locked" id="badge-half">
+                <span class="badge-icon">⚡</span>
+                <span class="badge-title">Half Adder Master</span>
+                <span class="badge-desc">Complete Module 2</span>
+              </div>
+              <div class="badge-item locked" id="badge-full">
+                <span class="badge-icon">🎛️</span>
+                <span class="badge-title">Full Adder Architect</span>
+                <span class="badge-desc">Complete Module 3</span>
+              </div>
+              <div class="badge-item locked" id="badge-sandbox">
+                <span class="badge-icon">🛠️</span>
+                <span class="badge-title">Sandbox Champion</span>
+                <span class="badge-desc">Verify circuit sandbox</span>
+              </div>
+              <div class="badge-item locked" id="badge-ripple">
+                <span class="badge-icon">🌊</span>
+                <span class="badge-title">Ripple Master</span>
+                <span class="badge-desc">Animate 4-bit addition</span>
+              </div>
+              <div class="badge-item locked" id="badge-breadboard">
+                <span class="badge-icon">🔌</span>
+                <span class="badge-title">IC Wire Specialist</span>
+                <span class="badge-desc">Toggle physical switches</span>
+              </div>
+              <div class="badge-item locked" id="badge-arcade">
+                <span class="badge-icon">🏆</span>
+                <span class="badge-title">Arcade Champion</span>
+                <span class="badge-desc">Score 150 points in Arcade</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="arcade-stats-card">
+            <h3>Laboratory Stats Summary</h3>
+            <div class="stats-list">
+              <div class="stat-item-row">
+                <span class="stat-name">Modules Completed</span>
+                <span id="stat-modules-done" class="stat-val">0 / 7</span>
+              </div>
+              <div class="stat-item-row">
+                <span class="stat-name">Arcade High Score</span>
+                <span id="stat-arcade-high" class="stat-val">0</span>
+              </div>
+              <div class="stat-item-row">
+                <span class="stat-name">Correct Answers</span>
+                <span id="stat-correct-count" class="stat-val">0</span>
+              </div>
+              <div class="stat-item-row">
+                <span class="stat-name">Toggles Clicked</span>
+                <span id="stat-clicks-count" class="stat-val">0</span>
+              </div>
+            </div>
+            
+            <button id="btn-restart-lab" class="btn warning full-width mt-4">Restart and Clear Memory</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+  </div> <!-- closing #app-trainer-container -->
+  
+  <script src="script.js"></script>
+</body>
+</html>
