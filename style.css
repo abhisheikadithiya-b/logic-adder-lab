@@ -3059,3 +3059,200 @@ body {
   color: #ff4477;
   border-color: #ff4477;
 }
+
+/* ==========================================================================
+   COMPREHENSIVE MOBILE VIEWPORT OPTIMIZATIONS (UNDER 600PX)
+   ========================================================================== */
+@media (max-width: 600px) {
+  /* 1. Global Spacing & Layout */
+  .app-content {
+    padding: 12px !important;
+  }
+  
+  .app-header {
+    padding: 8px 12px !important;
+    height: 60px !important;
+  }
+  
+  .logo-text h1 {
+    font-size: 0.95rem !important;
+    letter-spacing: 1px !important;
+  }
+  
+  .logo-text .tagline {
+    font-size: 0.6rem !important;
+  }
+
+  .logo svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  /* 2. Navigation Sidebar Collapsed Optimization */
+  .app-nav {
+    width: 55px !important;
+    padding: 12px 2px !important;
+  }
+  
+  .nav-item {
+    padding: 10px 2px !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+  
+  .nav-num {
+    font-size: 0.75rem !important;
+  }
+
+  /* 3. Interactive SVG Schematics & Breadboards Scaling */
+  .schematic-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px !important;
+  }
+  
+  /* Prevent schematics from squishing below readable sizes */
+  #half-adder-svg {
+    min-width: 550px !important;
+  }
+  
+  #fa-gate-svg, #fa-block-svg {
+    min-width: 600px !important;
+  }
+  
+  #breadboard-ha-svg {
+    min-width: 650px !important;
+  }
+  
+  #breadboard-fa-svg {
+    min-width: 700px !important;
+  }
+  
+  #kmap-ha-svg, #kmap-fa-svg {
+    min-width: 480px !important;
+  }
+  
+  #ripple-chain-svg {
+    min-width: 850px !important;
+  }
+
+  /* Custom styled mini-scrollbar for overflow wrappers */
+  .schematic-wrapper::-webkit-scrollbar,
+  .ripple-chain-wrapper::-webkit-scrollbar,
+  .sandbox-canvas-wrapper::-webkit-scrollbar {
+    height: 6px;
+  }
+  .schematic-wrapper::-webkit-scrollbar-thumb,
+  .ripple-chain-wrapper::-webkit-scrollbar-thumb,
+  .sandbox-canvas-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(0, 210, 255, 0.3);
+    border-radius: 3px;
+  }
+
+  /* 4. Proctoring Exam Status Bar Full-Width Banner */
+  .exam-status-bar {
+    position: sticky !important;
+    top: -12px !important;
+    margin: -12px -12px 16px -12px !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    padding: 8px 12px !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: space-around !important;
+    gap: 6px !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
+  }
+  
+  .exam-status-item {
+    font-size: 0.75rem !important;
+    gap: 4px !important;
+  }
+
+  /* 5. Ripple Carry Playground Adjustments */
+  .nibble-selector {
+    gap: 6px !important;
+    justify-content: space-between !important;
+  }
+  
+  .bit-ctrl label {
+    font-size: 0.65rem !important;
+  }
+  
+  .nibble-toggle {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.85rem !important;
+    padding: 0 !important;
+  }
+
+  /* 6. Sandbox Palette & Controls stacking */
+  .palette-gates {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  .palette-item {
+    padding: 6px !important;
+    font-size: 0.7rem !important;
+  }
+  
+  .sandbox-tools {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  .sandbox-tools .btn {
+    flex: 1 1 calc(50% - 8px) !important;
+    justify-content: center !important;
+    padding: 8px 12px !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* 7. Logic Arcade Layouts during active exams */
+  #module-arcade.exam-active .arcade-modes-card {
+    display: none !important;
+  }
+  
+  #module-arcade.exam-active .arcade-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .predict-led-box {
+    gap: 12px !important;
+  }
+  
+  .predict-led-btn {
+    width: 85px !important;
+    height: 100px !important;
+    border-radius: 8px !important;
+    gap: 6px !important;
+  }
+
+  .led-lens {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  
+  .btn-val {
+    font-size: 1rem !important;
+  }
+
+  .timed-choices {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* 8. Mastery Stats Grid */
+  .mastery-badges {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .badge-item {
+    padding: 10px 4px !important;
+  }
+}
+

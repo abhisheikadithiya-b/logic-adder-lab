@@ -2882,6 +2882,9 @@ function initArcadeModule() {
       if (arcadeMainContainer) arcadeMainContainer.classList.remove('hidden');
       if (examStatusBar) examStatusBar.classList.remove('hidden');
       if (arcadeStepFooter) arcadeStepFooter.classList.add('hidden');
+      
+      const moduleArcade = document.getElementById('module-arcade');
+      if (moduleArcade) moduleArcade.classList.add('exam-active');
 
       if (state.exam.timerId) clearInterval(state.exam.timerId);
       state.exam.timerId = setInterval(updateExamTimer, 1000);
@@ -2969,6 +2972,9 @@ function initArcadeModule() {
     if (arcadeMainContainer) arcadeMainContainer.classList.add('hidden');
     if (examStatusBar) examStatusBar.classList.add('hidden');
     if (examWarningModal) examWarningModal.classList.add('hidden');
+
+    const moduleArcade = document.getElementById('module-arcade');
+    if (moduleArcade) moduleArcade.classList.remove('exam-active');
 
     const finalScore = state.arcade.score;
     const finalHigh = Math.max(state.arcade.highScore, finalScore);
