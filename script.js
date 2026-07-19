@@ -343,6 +343,23 @@ function initNavigation() {
   });
 }
 
+let sandboxAnimationId = null;
+function startSandboxAnimation() {
+  if (sandboxAnimationId) return;
+  function anim() {
+    drawSandbox();
+    sandboxAnimationId = requestAnimationFrame(anim);
+  }
+  sandboxAnimationId = requestAnimationFrame(anim);
+}
+
+function stopSandboxAnimation() {
+  if (sandboxAnimationId) {
+    cancelAnimationFrame(sandboxAnimationId);
+    sandboxAnimationId = null;
+  }
+}
+
 function switchModule(targetId) {
   playSound('click');
   // Mark current as complete on navigation click to encourage user journey completion
@@ -352,17 +369,28 @@ function switchModule(targetId) {
 
   // Deactivate current
   document.getElementById(state.activeModule).classList.remove('active');
-  document.querySelector(`.nav-item[data-target="${state.activeModule}"]`).classList.remove('active');
+  const oldNav = document.querySelector(`.nav-item[data-target="${state.activeModule}"]`);
+  if (oldNav) {
+    oldNav.classList.remove('active');
+    oldNav.removeAttribute('aria-current');
+  }
 
   // Activate target
   document.getElementById(targetId).classList.add('active');
-  document.querySelector(`.nav-item[data-target="${targetId}"]`).classList.add('active');
+  const newNav = document.querySelector(`.nav-item[data-target="${targetId}"]`);
+  if (newNav) {
+    newNav.classList.add('active');
+    newNav.setAttribute('aria-current', 'page');
+  }
 
   state.activeModule = targetId;
 
   // Sandbox setup or resize redraw if target is sandbox
   if (targetId === 'module-sandbox') {
     initSandboxCanvas();
+    startSandboxAnimation();
+  } else {
+    stopSandboxAnimation();
   }
 }
 
@@ -1176,6 +1204,12 @@ function getPinPosition(type, id, pinIdx) {
 // Pin hover detection bounds
 function getPinAtPosition(pos) {
   const isFA = (state.sandbox.mission === 'fa');
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth < 640);
+  
+  const portTolerance = isTouch ? 35 : 26;
+  const gateOutTolerance = isTouch ? 24 : 18;
+  const gateInTolerance = isTouch ? 20 : 14;
+
   let bestPin = null;
   let bestDist = Infinity;
 
@@ -1184,7 +1218,7 @@ function getPinAtPosition(pos) {
   for (let inId of inputs) {
     const pinPos = getPinPosition('input_port', inId);
     const dist = Math.hypot(pos.x - pinPos.x, pos.y - pinPos.y);
-    if (dist <= 26 && dist < bestDist) {
+    if (dist <= portTolerance && dist < bestDist) {
       bestPin = { type: 'input_port', id: inId, pinIndex: 0, isOutput: true, x: pinPos.x, y: pinPos.y };
       bestDist = dist;
     }
@@ -1195,7 +1229,7 @@ function getPinAtPosition(pos) {
   for (let outId of outputs) {
     const pinPos = getPinPosition('output_port', outId);
     const dist = Math.hypot(pos.x - pinPos.x, pos.y - pinPos.y);
-    if (dist <= 26 && dist < bestDist) {
+    if (dist <= portTolerance && dist < bestDist) {
       bestPin = { type: 'output_port', id: outId, pinIndex: 0, isOutput: false, x: pinPos.x, y: pinPos.y };
       bestDist = dist;
     }
@@ -1206,21 +1240,21 @@ function getPinAtPosition(pos) {
     // Output pin
     const outPos = getPinPosition('gate', gate.id, 'out');
     const outDist = Math.hypot(pos.x - outPos.x, pos.y - outPos.y);
-    if (outDist <= 18 && outDist < bestDist) {
+    if (outDist <= gateOutTolerance && outDist < bestDist) {
       bestPin = { type: 'gate', id: gate.id, pinIndex: 0, isOutput: true, x: outPos.x, y: outPos.y };
       bestDist = outDist;
     }
     // Input 0
     const in0Pos = getPinPosition('gate', gate.id, 0);
     const in0Dist = Math.hypot(pos.x - in0Pos.x, pos.y - in0Pos.y);
-    if (in0Dist <= 14 && in0Dist < bestDist) {
+    if (in0Dist <= gateInTolerance && in0Dist < bestDist) {
       bestPin = { type: 'gate', id: gate.id, pinIndex: 0, isOutput: false, x: in0Pos.x, y: in0Pos.y };
       bestDist = in0Dist;
     }
     // Input 1
     const in1Pos = getPinPosition('gate', gate.id, 1);
     const in1Dist = Math.hypot(pos.x - in1Pos.x, pos.y - in1Pos.y);
-    if (in1Dist <= 14 && in1Dist < bestDist) {
+    if (in1Dist <= gateInTolerance && in1Dist < bestDist) {
       bestPin = { type: 'gate', id: gate.id, pinIndex: 1, isOutput: false, x: in1Pos.x, y: in1Pos.y };
       bestDist = in1Dist;
     }
@@ -1391,7 +1425,16 @@ function onSandboxMouseUp(e) {
 
 // Touch support wrapper functions for mobile devices
 function onSandboxTouchStart(e) {
-  if (e.touches && e.touches.length > 0) {
+  if (e.touches && e.touches.length > 1) {
+    // Abort active drag/wire drawing so pinch-zoom gesture works cleanly
+    state.sandbox.draggingGate = null;
+    state.sandbox.connectingPin = null;
+    const wrapper = document.querySelector('.sandbox-canvas-wrapper');
+    if (wrapper) wrapper.classList.remove('dragging');
+    return;
+  }
+
+  if (e.touches && e.touches.length === 1) {
     const pos = getMouseCoordinates(e);
     const pin = getPinAtPosition(pos);
     const gate = getGateAtPosition(pos);
@@ -1406,7 +1449,11 @@ function onSandboxTouchStart(e) {
 }
 
 function onSandboxTouchMove(e) {
-  if (e.touches && e.touches.length > 0) {
+  if (e.touches && e.touches.length > 1) {
+    return;
+  }
+
+  if (e.touches && e.touches.length === 1) {
     // Only prevent default (stop scrolling) if currently dragging or wiring
     if (state.sandbox.draggingGate || state.sandbox.connectingPin) {
       e.preventDefault();
@@ -1467,16 +1514,31 @@ function drawSandbox() {
     sandboxCtx.moveTo(p1.x, p1.y);
     sandboxCtx.bezierCurveTo(p1.x + 50, p1.y, p2.x - 50, p2.y, p2.x, p2.y);
     
-    // Drawing wire glowing shadow
     if (wireActive) {
-      sandboxCtx.strokeStyle = 'rgba(255, 159, 28, 0.4)';
+      // 1. Draw glowing background shadow (wide solid amber)
+      sandboxCtx.strokeStyle = 'rgba(255, 159, 28, 0.25)';
       sandboxCtx.lineWidth = 6;
       sandboxCtx.stroke();
-    }
+      
+      // 2. Draw solid amber core wire
+      sandboxCtx.strokeStyle = isSelected ? 'var(--accent-cyan)' : 'var(--accent-amber)';
+      sandboxCtx.lineWidth = isSelected ? 3.5 : 2.5;
+      sandboxCtx.stroke();
 
-    sandboxCtx.strokeStyle = isSelected ? 'var(--accent-cyan)' : (wireActive ? 'var(--accent-amber)' : 'var(--signal-low)');
-    sandboxCtx.lineWidth = isSelected ? 3.5 : 2.5;
-    sandboxCtx.stroke();
+      // 3. Draw moving bright signal dashes
+      sandboxCtx.save();
+      sandboxCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; // bright signal pulses
+      sandboxCtx.lineWidth = isSelected ? 3.0 : 2.0;
+      sandboxCtx.setLineDash([8, 12]); // 8px pulse, 12px gap
+      sandboxCtx.lineDashOffset = -((Date.now() / 30) % 20); // scroll direction (flowing forward)
+      sandboxCtx.stroke();
+      sandboxCtx.restore();
+    } else {
+      // Inactive wire
+      sandboxCtx.strokeStyle = isSelected ? 'var(--accent-cyan)' : 'var(--signal-low)';
+      sandboxCtx.lineWidth = isSelected ? 3.5 : 2.5;
+      sandboxCtx.stroke();
+    }
   });
 
   // Draw current live wire connection being drawn by user
@@ -1489,7 +1551,8 @@ function drawSandbox() {
     sandboxCtx.bezierCurveTo(p1.x + 50, p1.y, p2.x - 50, p2.y, p2.x, p2.y);
     sandboxCtx.strokeStyle = 'var(--accent-cyan)';
     sandboxCtx.lineWidth = 2;
-    sandboxCtx.setLineDash([4, 4]);
+    sandboxCtx.setLineDash([6, 6]);
+    sandboxCtx.lineDashOffset = -((Date.now() / 20) % 12);
     sandboxCtx.stroke();
     sandboxCtx.setLineDash([]); // Reset
   }
@@ -3696,6 +3759,34 @@ function initControls() {
     updateProgressUI();
     switchModule('module-intro');
   });
+
+  // Save certificate export handler
+  const btnSaveCert = document.getElementById('btn-save-certificate');
+  if (btnSaveCert) {
+    btnSaveCert.addEventListener('click', () => {
+      playSound('click');
+      const card = document.querySelector('.mastery-summary-card');
+      
+      // Hide button temporarily to avoid rendering in image
+      btnSaveCert.style.display = 'none';
+      
+      html2canvas(card, {
+        backgroundColor: '#0a0e1a',
+        scale: 2,
+        useCORS: true
+      }).then(canvas => {
+        btnSaveCert.style.display = '';
+        const link = document.createElement('a');
+        link.download = 'logic_lab_mastery_certificate.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }).catch(err => {
+        btnSaveCert.style.display = '';
+        console.error('Error generating certificate:', err);
+        alert('Could not save certificate. Please try again.');
+      });
+    });
+  }
 }
 
 // ============================================================
@@ -3959,8 +4050,12 @@ function initLandingPageModule() {
     evaluateDemoHA();
   });
 
+  let searchTimeout = null;
   document.getElementById('admin-search-input').addEventListener('input', () => {
-    renderAdminRoster();
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      renderAdminRoster();
+    }, 200);
   });
 
   document.getElementById('admin-sort-select').addEventListener('change', () => {
@@ -4347,10 +4442,16 @@ function renderAdminRoster() {
   filtered.forEach(s => {
     const tr = document.createElement('tr');
     const completedLen = Array.isArray(s.completedModules) ? s.completedModules.length : 0;
+    
+    const escapedRoll = escapeHtml(s.rollNo || '-');
+    const escapedName = escapeHtml(s.name || s.rollNo || '');
+    const escapedClass = escapeHtml(s.classCode || '');
+    const escapedActive = escapeHtml(s.lastActive || '-');
+
     tr.innerHTML = `
-      <td class="font-mono text-bright">${s.rollNo || '-'}</td>
-      <td class="bold text-bright">${s.name || s.rollNo}</td>
-      <td><span class="badge secondary">${s.classCode}</span></td>
+      <td class="font-mono text-bright">${escapedRoll}</td>
+      <td class="bold text-bright">${escapedName}</td>
+      <td><span class="badge secondary">${escapedClass}</span></td>
       <td>
         <div style="display:flex; align-items:center; gap:8px;">
           <span>${completedLen} / 8</span>
@@ -4363,9 +4464,9 @@ function renderAdminRoster() {
           <div class="mini-bar-track" style="width:60px;"><div class="mini-bar-fill fill-cyan" style="width:${s.accuracy || 0}%;"></div></div>
         </div>
       </td>
-      <td class="font-mono text-muted">${s.lastActive || '-'}</td>
+      <td class="font-mono text-muted">${escapedActive}</td>
       <td>
-        <button class="btn primary compact btn-view-dossier" data-roll="${s.rollNo}">View Dossier</button>
+        <button class="btn primary compact btn-view-dossier" data-roll="${escapedRoll}">View Dossier</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -4453,6 +4554,23 @@ function openStudentDossier(rollNo) {
   document.getElementById('admin-detail-modal').classList.remove('hidden');
 }
 
+function escapeHtml(str) {
+  if (typeof str !== 'string') {
+    if (str === null || str === undefined) return '';
+    return String(str);
+  }
+  return str.replace(/[&<>"']/g, function(m) {
+    switch (m) {
+      case '&': return '&amp;';
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '"': return '&quot;';
+      case "'": return '&#039;';
+      default: return m;
+    }
+  });
+}
+
 // ONLOAD BOOTSTRAPPER
 window.addEventListener('DOMContentLoaded', () => {
   // Initialize module components
@@ -4470,4 +4588,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Load state from local memory cache if present
   updateProgressUI();
+
+  // Register Service Worker for offline PWA support
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('ServiceWorker registered:', reg.scope))
+        .catch(err => console.log('ServiceWorker registration failed:', err));
+    });
+  }
 });

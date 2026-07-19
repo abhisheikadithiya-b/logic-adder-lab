@@ -4,6 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Interactive Logic Adder Lab</title>
+  <meta name="description" content="An interactive hardware simulation lab for learning binary adding models, propagation delays, and IC logic gates.">
+  
+  <!-- Open Graph / SEO Meta Tags -->
+  <meta property="og:title" content="Interactive Logic Adder Lab">
+  <meta property="og:description" content="An interactive hardware simulation lab for learning binary adding models, propagation delays, and IC logic gates.">
+  <meta property="og:type" content="website">
+  
+  <!-- PWA & Mobile Web Apps -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#00d2ff">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔌</text></svg>">
+  
   <link rel="stylesheet" href="style.css">
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -47,7 +59,7 @@
 
   <!-- New App Landing Page -->
   <div id="app-landing" class="landing-page">
-    <div class="landing-hero-section">
+    <div class="landing-hero-section grid-split-main">
       <div class="hero-left">
         <span class="badge neon-cyan">Interactive Lab</span>
         <h2 class="hero-title">Learn Adders by Building Them</h2>
@@ -122,7 +134,7 @@
     <!-- Section 2: How It Works -->
     <div class="landing-walkthrough-section">
       <h3 class="section-title">How the Laboratory Works</h3>
-      <div class="walkthrough-cards-container">
+      <div class="walkthrough-cards-container grid-cards-auto">
         <div class="walkthrough-card">
           <div class="card-animation-box">
             <svg class="preview-svg" viewBox="0 0 100 60">
@@ -235,7 +247,7 @@
 
     <!-- Section 4: Student Login Form -->
     <div id="student-login-box" class="landing-login-section">
-      <div class="login-card">
+      <div class="login-card grid-split-main-rev" style="--main-col: 1fr 2fr;">
         <div class="terminal-header">
           <span class="terminal-dot red"></span>
           <span class="terminal-dot yellow"></span>
@@ -272,7 +284,7 @@
 
     <!-- Section 5: Admin Login Form Drawer (Hidden initially) -->
     <div id="admin-login-box" class="landing-login-section hidden">
-      <div class="login-card admin-card">
+      <div class="login-card admin-card grid-split-main-rev" style="--main-col: 1fr 2fr;">
         <div class="terminal-header">
           <span class="terminal-dot red"></span>
           <span class="terminal-dot yellow"></span>
@@ -316,7 +328,7 @@
     </header>
 
     <!-- Overview Stats Rows -->
-    <div class="admin-stats-grid">
+    <div class="admin-stats-grid grid-cards-auto" style="--card-min: 220px;">
       <div class="admin-stat-card">
         <span class="stat-lbl">Active Roster Size</span>
         <h3 id="admin-stat-total-students">0</h3>
@@ -417,7 +429,7 @@
           <span id="admin-detail-title" class="terminal-title">STUDENT_DOSSIER.TXT</span>
         </div>
         
-        <div class="detail-grid">
+        <div class="detail-grid grid-split-main-rev" style="--main-col: 1fr 2fr;">
           <!-- Left Column: Student summary -->
           <div class="detail-sidebar">
             <h2 id="admin-detail-name">Student Name</h2>
@@ -497,7 +509,7 @@
     </div>
 
     <div class="header-controls">
-      <button id="btn-sound-toggle" class="icon-btn muted" title="Toggle Sound">
+      <button id="btn-sound-toggle" class="icon-btn muted" title="Toggle Sound" aria-label="Toggle Sound Effects">
         <svg id="sound-icon-on" viewBox="0 0 24 24" width="20" height="20" class="hidden">
           <path fill="currentColor" d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/>
         </svg>
@@ -505,7 +517,7 @@
           <path fill="currentColor" d="M12,4L9.91,6.09L12,8.18M19,12C19,14.88 17.38,17.38 15,18.6L16.45,20.05C19.21,18.3 21,15.37 21,12C21,7.72 18,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.44 14,18.7V20.76C15.38,20.45 16.63,19.78 17.69,18.95L19.73,21L21,19.73L12,10.73M12,4V7.27L9,4.27"/>
         </svg>
       </button>
-      <button id="btn-global-reset" class="icon-btn" title="Reset All Modules">
+      <button id="btn-global-reset" class="icon-btn" title="Reset All Modules" aria-label="Reset All Modules">
         <svg viewBox="0 0 24 24" width="20" height="20">
           <path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
         </svg>
@@ -516,53 +528,35 @@
   <!-- App Wrapper -->
   <div class="app-container">
     <!-- Sidebar Stepper Navigation -->
-    <nav class="app-nav">
+    <nav class="app-nav" role="navigation">
       <ul class="nav-list">
-        <li class="nav-item active" data-target="module-intro">
-          <div class="nav-indicator"><span class="dot"></span></div>
+        <li class="nav-item-wrapper"><button class="nav-item active" data-target="module-intro" aria-current="page"><div class="nav-indicator"><span class="dot"></span></div>
           <span class="nav-title"><span class="nav-num">01.</span> <span class="nav-text">Binary Carry</span></span>
-          <span class="nav-status-badge"></span>
-        </li>
-        <li class="nav-item" data-target="module-half-adder">
-          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-status-badge"></span></button></li>
+        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-half-adder"><div class="nav-indicator"><span class="dot"></span></div>
           <span class="nav-title"><span class="nav-num">02.</span> <span class="nav-text">Half Adder Lab</span></span>
-          <span class="nav-status-badge"></span>
-        </li>
-        <li class="nav-item" data-target="module-full-adder">
-          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-status-badge"></span></button></li>
+        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-full-adder"><div class="nav-indicator"><span class="dot"></span></div>
           <span class="nav-title"><span class="nav-num">03.</span> <span class="nav-text">Full Adder Lab</span></span>
-          <span class="nav-status-badge"></span>
-        </li>
-        <li class="nav-item" data-target="module-kmap">
-          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-status-badge"></span></button></li>
+        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-kmap"><div class="nav-indicator"><span class="dot"></span></div>
           <span class="nav-title"><span class="nav-num">04.</span> <span class="nav-text">K-Map Lab</span></span>
-          <span class="nav-status-badge"></span>
-        </li>
-        <li class="nav-item" data-target="module-sandbox">
-          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-status-badge"></span></button></li>
+        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-sandbox"><div class="nav-indicator"><span class="dot"></span></div>
           <span class="nav-title"><span class="nav-num">05.</span> <span class="nav-text">Gate Sandbox</span></span>
-          <span class="nav-status-badge"></span>
-        </li>
-        <li class="nav-item" data-target="module-ripple-carry">
-          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-status-badge"></span></button></li>
+        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-ripple-carry"><div class="nav-indicator"><span class="dot"></span></div>
           <span class="nav-title"><span class="nav-num">06.</span> <span class="nav-text">Ripple Playground</span></span>
-          <span class="nav-status-badge"></span>
-        </li>
-        <li class="nav-item" data-target="module-breadboard">
-          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-status-badge"></span></button></li>
+        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-breadboard"><div class="nav-indicator"><span class="dot"></span></div>
           <span class="nav-title"><span class="nav-num">07.</span> <span class="nav-text">Breadboard/IC</span></span>
-          <span class="nav-status-badge"></span>
-        </li>
-        <li class="nav-item" data-target="module-arcade">
-          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-status-badge"></span></button></li>
+        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-arcade"><div class="nav-indicator"><span class="dot"></span></div>
           <span class="nav-title"><span class="nav-num">08.</span> <span class="nav-text">Logic Arcade</span></span>
-          <span class="nav-status-badge"></span>
-        </li>
-        <li class="nav-item" data-target="module-mastery">
-          <div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-status-badge"></span></button></li>
+        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-mastery"><div class="nav-indicator"><span class="dot"></span></div>
           <span class="nav-title"><span class="nav-num">09.</span> <span class="nav-text">Mastery Stats</span></span>
-          <span class="nav-status-badge"></span>
-        </li>
+          <span class="nav-status-badge"></span></button></li>
       </ul>
     </nav>
 
@@ -586,7 +580,7 @@
             <h3>Interactive Carrying Demo</h3>
             <p class="hint">Toggle the bits below to see how decimal and binary sums correspond and force carries.</p>
             
-            <div class="addition-visualizer">
+            <div class="addition-visualizer grid-split-equal">
               <!-- Binary Column -->
               <div class="viz-column binary-viz">
                 <h4>Binary Addition</h4>
@@ -645,7 +639,7 @@
           <h2>Module 2: The Half Adder</h2>
           <span class="module-difficulty">Core Logic</span>
         </div>
-        <div class="split-layout">
+        <div class="split-layout grid-split-main">
           <!-- Interactive Diagram Column -->
           <div class="card-column logic-diagram-card">
             <div class="card-header-actions">
@@ -779,7 +773,7 @@
           <h2>Module 3: The Full Adder</h2>
           <span class="module-difficulty">Intermediate</span>
         </div>
-        <div class="split-layout">
+        <div class="split-layout grid-split-main">
           <!-- Interactive Diagram Column -->
           <div class="card-column logic-diagram-card large">
             <div class="card-header-actions">
@@ -1058,7 +1052,7 @@
           <span class="module-difficulty">Visual Minimization</span>
         </div>
         
-        <div class="split-layout">
+        <div class="split-layout grid-split-main">
           <!-- Left Column: K-Map Visualizer -->
           <div class="card-column logic-diagram-card large">
             <div class="card-header-actions">
@@ -1284,7 +1278,7 @@
             <span class="module-difficulty">Hands-On Practice</span>
           </div>
         </div>
-        <div class="sandbox-grid">
+        <div class="sandbox-grid grid-sidebar-left" style="--sidebar-col-width: 300px;">
           <!-- Left Panel: Gate Palette & Instructions -->
           <div class="sandbox-controls">
             <div class="instructions-panel">
@@ -1350,7 +1344,7 @@
 
             <!-- Grid container where nodes are interactive -->
             <div class="sandbox-canvas-wrapper">
-              <div class="sandbox-relative-container" style="position: relative; width: 700px; height: 480px; flex-shrink: 0; margin: 0 auto;">
+              <div class="sandbox-relative-container">
                 <canvas id="sandbox-canvas" width="700" height="480"></canvas>
                 
                 <div id="canvas-inputs-panel" class="canvas-side-panel inputs">
@@ -1392,7 +1386,7 @@
           </div>
 
           <!-- Ripple Carry Dashboard -->
-          <div class="ripple-dashboard">
+          <div class="ripple-dashboard grid-split-equal">
             <!-- Left inputs panel -->
             <div class="ripple-inputs-panel">
               <div class="input-binary-group">
@@ -1448,7 +1442,7 @@
           </div>
 
           <!-- Chain schematic visualizer -->
-          <div class="ripple-chain-wrapper">
+          <div class="ripple-chain-wrapper scroll-on-mobile" style="--scroll-min-width: 850px;">
             <svg id="ripple-chain-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 240">
               <rect width="100%" height="100%" fill="url(#schematic-grid)" />
 
@@ -1550,7 +1544,7 @@
           <h2>Module 7: Practical Breadboard & IC View</h2>
           <span class="module-difficulty">Hardware Interface</span>
         </div>
-        <div class="split-layout">
+        <div class="split-layout grid-split-main">
           <!-- Breadboard panel -->
           <div class="card-column logic-diagram-card large">
             <div class="card-header-actions">
@@ -1942,7 +1936,7 @@
         </div>
 
         <!-- Original Arcade Container (Hidden initially until exam starts) -->
-        <div id="arcade-main-container" class="arcade-grid hidden">
+        <div id="arcade-main-container" class="arcade-grid grid-sidebar-left hidden" style="--sidebar-col-width: 320px;">
           <!-- Game Mode Selector -->
           <div class="arcade-modes-card">
             <h3>Select a Practice Mission</h3>
@@ -1995,7 +1989,7 @@
               <h3>Predict the Output</h3>
               <p class="hint">Look at the inputs below, calculate the outputs, and click the correct LEDs. Press "Submit" to check.</p>
               
-              <div class="predict-layout">
+              <div class="predict-layout grid-split-equal">
                 <div class="circuit-stimulus">
                   <div class="gate-type-badge" id="predict-gate-type">HALF ADDER</div>
                   <div class="stimulus-inputs">
@@ -2059,7 +2053,7 @@
                 <div class="timed-question">
                   <span id="timed-expr-a">1</span> + <span id="timed-expr-b">1</span> + <span id="timed-expr-cin">0</span>
                 </div>
-                <div class="timed-choices">
+                <div class="timed-choices grid-split-equal">
                   <button class="choice-btn" data-s="0" data-c="0">S=0, C=0</button>
                   <button class="choice-btn" data-s="1" data-c="0">S=1, C=0</button>
                   <button class="choice-btn" data-s="0" data-c="1">S=0, C=1</button>
@@ -2087,13 +2081,13 @@
           <h2>Module 9: Mastery Dashboard</h2>
           <span class="module-difficulty">Final Report</span>
         </div>
-        <div class="mastery-container">
+        <div class="mastery-container grid-sidebar-right" style="--sidebar-col-width: 340px;">
           <div class="mastery-summary-card">
             <div class="avatar-trophy">🎓</div>
             <h2>Logic Lab Mastery Certificate</h2>
             <p>You have interacted with all core adding models, observed propagation delays, and solved hardware wire configurations.</p>
             
-            <div class="mastery-badges">
+            <div class="mastery-badges grid-cards-auto" style="--card-min-width: 130px;">
               <div class="badge-item locked" id="badge-intro">
                 <span class="badge-icon">💡</span>
                 <span class="badge-title">Carry Explorer</span>
@@ -2130,6 +2124,7 @@
                 <span class="badge-desc">Score 150 points in Arcade</span>
               </div>
             </div>
+            <button id="btn-save-certificate" class="btn primary mt-4" style="width: 100%;">💾 Save Certificate (PNG)</button>
           </div>
 
           <div class="arcade-stats-card">
@@ -2162,6 +2157,7 @@
   </div>
   </div> <!-- closing #app-trainer-container -->
   
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
