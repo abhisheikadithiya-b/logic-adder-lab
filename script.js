@@ -1472,7 +1472,7 @@ function drawSandbox() {
       sandboxCtx.stroke();
       
       // 2. Draw solid amber core wire
-      sandboxCtx.strokeStyle = isSelected ? 'var(--accent-cyan)' : 'var(--accent-amber)';
+      sandboxCtx.strokeStyle = isSelected ? '#00d2ff' : '#ff9f1c';
       sandboxCtx.lineWidth = isSelected ? 3.5 : 2.5;
       sandboxCtx.stroke();
 
@@ -1486,7 +1486,7 @@ function drawSandbox() {
       sandboxCtx.restore();
     } else {
       // Inactive wire
-      sandboxCtx.strokeStyle = isSelected ? 'var(--accent-cyan)' : 'var(--signal-low)';
+      sandboxCtx.strokeStyle = isSelected ? '#00d2ff' : '#2b3648';
       sandboxCtx.lineWidth = isSelected ? 3.5 : 2.5;
       sandboxCtx.stroke();
     }
@@ -1500,7 +1500,7 @@ function drawSandbox() {
     sandboxCtx.beginPath();
     sandboxCtx.moveTo(p1.x, p1.y);
     sandboxCtx.bezierCurveTo(p1.x + 50, p1.y, p2.x - 50, p2.y, p2.x, p2.y);
-    sandboxCtx.strokeStyle = 'var(--accent-cyan)';
+    sandboxCtx.strokeStyle = '#00d2ff';
     sandboxCtx.lineWidth = 2;
     sandboxCtx.setLineDash([6, 6]);
     sandboxCtx.lineDashOffset = -((Date.now() / 20) % 12);
@@ -1533,7 +1533,7 @@ function drawSandbox() {
     // 1. Draw connection pin circle (at x = 30)
     sandboxCtx.beginPath();
     sandboxCtx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
-    sandboxCtx.fillStyle = state.sandbox[inId] ? 'var(--accent-amber)' : 'var(--signal-low)';
+    sandboxCtx.fillStyle = state.sandbox[inId] ? '#ff9f1c' : '#2b3648';
     sandboxCtx.fill();
     sandboxCtx.strokeStyle = '#fff';
     sandboxCtx.lineWidth = 1.5;
@@ -1545,7 +1545,7 @@ function drawSandbox() {
     const boxW = 16;
     const boxH = 18;
     
-    sandboxCtx.fillStyle = state.sandbox[inId] ? 'var(--accent-amber)' : '#1f2937';
+    sandboxCtx.fillStyle = state.sandbox[inId] ? '#ff9f1c' : '#1f2937';
     drawRoundedRect(sandboxCtx, boxX, boxY, boxW, boxH, 4);
     sandboxCtx.fill();
     
@@ -1573,9 +1573,9 @@ function drawSandbox() {
     // 1. Draw connection pin circle (at x = 670)
     sandboxCtx.beginPath();
     sandboxCtx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
-    sandboxCtx.fillStyle = 'var(--bg-dark)';
+    sandboxCtx.fillStyle = '#0a0e1a';
     sandboxCtx.fill();
-    sandboxCtx.strokeStyle = 'var(--border-color)';
+    sandboxCtx.strokeStyle = '#374151';
     sandboxCtx.lineWidth = 1.5;
     sandboxCtx.stroke();
 
@@ -1613,14 +1613,37 @@ function drawSandbox() {
   state.sandbox.gates.forEach(gate => {
     const isSelected = state.sandbox.selectedGate === gate;
     
+    // Distinct aesthetic themes for different gate types
+    let bg = '#111827';
+    let border = '#374151';
+    let textCol = '#f8fafc';
+    
+    if (gate.type === 'AND') {
+      bg = '#112240'; // Steel blue
+      border = isSelected ? '#ff9f1c' : '#3b82f6'; // Blue
+      textCol = '#93c5fd';
+    } else if (gate.type === 'OR') {
+      bg = '#2d1a22'; // Burgundy
+      border = isSelected ? '#ff9f1c' : '#ec4899'; // Pink
+      textCol = '#f9a8d4';
+    } else if (gate.type === 'XOR') {
+      bg = '#162e2d'; // Teal
+      border = isSelected ? '#ff9f1c' : '#06b6d4'; // Cyan
+      textCol = '#67e8f9';
+    }
+
+    if (isSelected && border !== '#ff9f1c') {
+      border = '#00d2ff'; // Selected cyan highlight
+    }
+
     // Draw gate body block
-    sandboxCtx.fillStyle = 'var(--bg-panel)';
-    sandboxCtx.strokeStyle = isSelected ? 'var(--accent-cyan)' : 'var(--border-color)';
+    sandboxCtx.fillStyle = bg;
+    sandboxCtx.strokeStyle = border;
     sandboxCtx.lineWidth = isSelected ? 2.5 : 1.5;
     
     // Glow effect for active gates
     if (gate.output.v === 1) {
-      sandboxCtx.shadowColor = 'rgba(0, 210, 255, 0.2)';
+      sandboxCtx.shadowColor = border;
       sandboxCtx.shadowBlur = 8;
     }
     
@@ -1632,19 +1655,20 @@ function drawSandbox() {
     sandboxCtx.shadowBlur = 0; // Reset
 
     // Gate title text
-    sandboxCtx.fillStyle = 'var(--text-bright)';
-    sandboxCtx.font = 'bold 10px JetBrains Mono';
+    sandboxCtx.fillStyle = textCol;
+    sandboxCtx.font = 'bold 11px "JetBrains Mono", Courier, monospace';
     sandboxCtx.textAlign = 'center';
-    sandboxCtx.fillText(gate.type, gate.x + 30, gate.y + 24);
+    sandboxCtx.textBaseline = 'middle';
+    sandboxCtx.fillText(gate.type, gate.x + 30, gate.y + 20);
 
     // Draw Input connection nodes (circles)
     [0, 1].forEach(idx => {
       const pinPos = getPinPosition('gate', gate.id, idx);
       sandboxCtx.beginPath();
       sandboxCtx.arc(pinPos.x, pinPos.y, 5, 0, Math.PI * 2);
-      sandboxCtx.fillStyle = gate.inputs[idx].v ? 'var(--accent-amber)' : 'var(--bg-dark)';
+      sandboxCtx.fillStyle = gate.inputs[idx].v ? '#ff9f1c' : '#0a0e1a';
       sandboxCtx.fill();
-      sandboxCtx.strokeStyle = 'var(--border-color)';
+      sandboxCtx.strokeStyle = '#374151';
       sandboxCtx.lineWidth = 1;
       sandboxCtx.stroke();
     });
@@ -1653,9 +1677,9 @@ function drawSandbox() {
     const outPos = getPinPosition('gate', gate.id, 'out');
     sandboxCtx.beginPath();
     sandboxCtx.arc(outPos.x, outPos.y, 5, 0, Math.PI * 2);
-    sandboxCtx.fillStyle = gate.output.v ? 'var(--accent-amber)' : 'var(--bg-dark)';
+    sandboxCtx.fillStyle = gate.output.v ? '#ff9f1c' : '#0a0e1a';
     sandboxCtx.fill();
-    sandboxCtx.strokeStyle = 'var(--border-color)';
+    sandboxCtx.strokeStyle = '#374151';
     sandboxCtx.lineWidth = 1;
     sandboxCtx.stroke();
   });
