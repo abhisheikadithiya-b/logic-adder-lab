@@ -2994,8 +2994,13 @@ body {
 }
 
 #module-sandbox.sandbox-fullscreen-mode .sandbox-grid {
+  display: grid !important;
+  grid-template-columns: 220px 1fr !important;
+  gap: 12px !important;
   flex: 1 !important;
   min-height: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* Override display:contents from 1024px media query */
@@ -3083,6 +3088,12 @@ body {
 
 #module-sandbox.sandbox-fullscreen-mode .live-validation-card {
   order: unset !important;
+  padding: 6px !important;
+}
+#module-sandbox.sandbox-fullscreen-mode .live-validation-card td,
+#module-sandbox.sandbox-fullscreen-mode .live-validation-card th {
+  padding: 4px 6px !important;
+  font-size: 0.7rem !important;
 }
 
 #module-sandbox.sandbox-fullscreen-mode .mission-selector .tab-btn {
