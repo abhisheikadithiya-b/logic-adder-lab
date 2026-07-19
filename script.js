@@ -892,10 +892,10 @@ function updateSandboxSidepanels() {
     wrapper.style.alignItems = 'center';
     wrapper.style.gap = '4px';
     
-    // Absolute position relative to canvas coordinate system
+    // Absolute position relative to canvas coordinate system (offset to the left of the pin at x = 30)
     const pinPos = getPinPosition('input_port', lbl.toLowerCase());
     wrapper.style.position = 'absolute';
-    wrapper.style.left = `${(pinPos.x / 700) * 100}%`;
+    wrapper.style.left = `${(15 / 700) * 100}%`;
     wrapper.style.top = `${(pinPos.y / 480) * 100}%`;
     wrapper.style.transform = 'translate(-50%, -25px)';
     
@@ -920,10 +920,10 @@ function updateSandboxSidepanels() {
     ledWrapper.style.alignItems = 'center';
     ledWrapper.style.gap = '4px';
     
-    // Absolute position relative to canvas coordinate system
+    // Absolute position relative to canvas coordinate system (offset to the right of the pin at x = 670)
     const pinPos = getPinPosition('output_port', lbl.toLowerCase());
     ledWrapper.style.position = 'absolute';
-    ledWrapper.style.left = `${(pinPos.x / 700) * 100}%`;
+    ledWrapper.style.left = `${(685 / 700) * 100}%`;
     ledWrapper.style.top = `${(pinPos.y / 480) * 100}%`;
     ledWrapper.style.transform = 'translate(-50%, -23px)';
 
