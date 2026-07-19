@@ -892,6 +892,13 @@ function updateSandboxSidepanels() {
     wrapper.style.alignItems = 'center';
     wrapper.style.gap = '4px';
     
+    // Absolute position relative to canvas coordinate system
+    const pinPos = getPinPosition('input_port', lbl.toLowerCase());
+    wrapper.style.position = 'absolute';
+    wrapper.style.left = `${(pinPos.x / 700) * 100}%`;
+    wrapper.style.top = `${(pinPos.y / 480) * 100}%`;
+    wrapper.style.transform = 'translate(-50%, -25px)';
+    
     const label = document.createElement('span');
     label.style.fontFamily = 'JetBrains Mono';
     label.style.fontSize = '10px';
@@ -912,6 +919,13 @@ function updateSandboxSidepanels() {
     ledWrapper.style.flexDirection = 'column';
     ledWrapper.style.alignItems = 'center';
     ledWrapper.style.gap = '4px';
+    
+    // Absolute position relative to canvas coordinate system
+    const pinPos = getPinPosition('output_port', lbl.toLowerCase());
+    ledWrapper.style.position = 'absolute';
+    ledWrapper.style.left = `${(pinPos.x / 700) * 100}%`;
+    ledWrapper.style.top = `${(pinPos.y / 480) * 100}%`;
+    ledWrapper.style.transform = 'translate(-50%, -23px)';
 
     const led = document.createElement('div');
     led.id = `sandbox-led-${lbl.toLowerCase()}`;

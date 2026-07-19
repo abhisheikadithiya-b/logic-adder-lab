@@ -248,36 +248,43 @@
     <!-- Section 4: Student Login Form -->
     <div id="student-login-box" class="landing-login-section">
       <div class="login-card grid-split-main-rev" style="--main-col: 1fr 2fr;">
-        <div class="terminal-header">
-          <span class="terminal-dot red"></span>
-          <span class="terminal-dot yellow"></span>
-          <span class="terminal-dot green"></span>
-          <span class="terminal-title">STUDENT_AUTHENTICATION.SH</span>
+        <!-- Left Side: Terminal Info -->
+        <div class="login-info-sidebar">
+          <div class="terminal-header">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">STUDENT_AUTHENTICATION.SH</span>
+          </div>
+          <p class="hint">Log in with your roll number and password to track completion progress, submit test scores, and earn mastery badges.</p>
+          <div class="login-footer">
+            <button id="btn-login-guest" class="btn-link">Continue as Guest (No progress tracking)</button>
+          </div>
         </div>
-        <h3>Enter Student Laboratory</h3>
-        <p class="hint">Log in with your roll number and password to track completion progress, submit test scores, and earn mastery badges.</p>
-        <form id="student-login-form">
-          <div class="form-group">
-            <label for="student-roll">Roll Number</label>
-            <input type="text" id="student-roll" placeholder="e.g. 2024CS101" required>
-          </div>
-          <div class="form-group">
-            <label for="student-class">Class</label>
-            <input type="text" id="student-class" placeholder="e.g. CSE-A" required>
-          </div>
-          <div class="form-group">
-            <label for="student-password">Password</label>
-            <input type="password" id="student-password" placeholder="Enter your password..." required>
-          </div>
-          <div id="login-error-msg" class="login-error hidden">Invalid credentials. Please check your roll number, class, and password.</div>
-          <div id="login-spinner" class="login-spinner hidden">
-            <div class="spinner-ring"></div>
-            <span>Authenticating...</span>
-          </div>
-          <button type="submit" id="btn-student-login" class="btn primary full-width">Enter Laboratory &rarr;</button>
-        </form>
-        <div class="login-footer">
-          <button id="btn-login-guest" class="btn-link">Continue as Guest (No progress tracking)</button>
+        
+        <!-- Right Side: Form Inputs -->
+        <div class="login-form-wrapper">
+          <h3>Enter Student Laboratory</h3>
+          <form id="student-login-form">
+            <div class="form-group">
+              <label for="student-roll">Roll Number</label>
+              <input type="text" id="student-roll" placeholder="e.g. 2024CS101" required>
+            </div>
+            <div class="form-group">
+              <label for="student-class">Class</label>
+              <input type="text" id="student-class" placeholder="e.g. CSE-A" required>
+            </div>
+            <div class="form-group">
+              <label for="student-password">Password</label>
+              <input type="password" id="student-password" placeholder="Enter your password..." required>
+            </div>
+            <div id="login-error-msg" class="login-error hidden">Invalid credentials. Please check your roll number, class, and password.</div>
+            <div id="login-spinner" class="login-spinner hidden">
+              <div class="spinner-ring"></div>
+              <span>Authenticating...</span>
+            </div>
+            <button type="submit" id="btn-student-login" class="btn primary full-width">Enter Laboratory &rarr;</button>
+          </form>
         </div>
       </div>
     </div>
@@ -285,27 +292,34 @@
     <!-- Section 5: Admin Login Form Drawer (Hidden initially) -->
     <div id="admin-login-box" class="landing-login-section hidden">
       <div class="login-card admin-card grid-split-main-rev" style="--main-col: 1fr 2fr;">
-        <div class="terminal-header">
-          <span class="terminal-dot red"></span>
-          <span class="terminal-dot yellow"></span>
-          <span class="terminal-dot green"></span>
-          <span class="terminal-title">ADMINISTRATOR_ACCESS.SYS</span>
+        <!-- Left Side: Terminal Info -->
+        <div class="login-info-sidebar">
+          <div class="terminal-header">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">ADMINISTRATOR_ACCESS.SYS</span>
+          </div>
+          <p class="hint">Verify credentials to check class-wide statistics and drill down on student rosters.</p>
+          <div class="login-footer">
+            <button id="btn-admin-cancel" class="btn-link">Cancel and Return</button>
+          </div>
         </div>
-        <h3>Teacher / Administrator Access</h3>
-        <p class="hint">Verify credentials to check class-wide statistics and drill down on student rosters.</p>
-        <form id="admin-login-form">
-          <div class="form-group">
-            <label for="admin-username">Username</label>
-            <input type="text" id="admin-username" placeholder="Enter admin username..." required>
-          </div>
-          <div class="form-group">
-            <label for="admin-password">Password</label>
-            <input type="password" id="admin-password" placeholder="Enter admin password..." required>
-          </div>
-          <button type="submit" class="btn primary full-width">Sign In as Admin &rarr;</button>
-        </form>
-        <div class="login-footer">
-          <button id="btn-admin-cancel" class="btn-link">Cancel and Return</button>
+        
+        <!-- Right Side: Form Inputs -->
+        <div class="login-form-wrapper">
+          <h3>Teacher / Administrator Access</h3>
+          <form id="admin-login-form">
+            <div class="form-group">
+              <label for="admin-username">Username</label>
+              <input type="text" id="admin-username" placeholder="Enter admin username..." required>
+            </div>
+            <div class="form-group">
+              <label for="admin-password">Password</label>
+              <input type="password" id="admin-password" placeholder="Enter admin password..." required>
+            </div>
+            <button type="submit" class="btn primary full-width">Sign In as Admin &rarr;</button>
+          </form>
         </div>
       </div>
     </div>

@@ -1090,27 +1090,15 @@ body {
 .canvas-side-panel {
   position: absolute;
   top: 0;
+  left: 0;
+  width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  padding: 20px 10px;
   pointer-events: none;
-}
-
-.canvas-side-panel.inputs {
-  left: 10px;
-}
-
-.canvas-side-panel.outputs {
-  right: 10px;
 }
 
 .canvas-side-panel button, .canvas-side-panel .led-node-overlay {
   pointer-events: auto;
 }
-
-/* Sandbox success screen overlays */
 .canvas-overlay {
   position: absolute;
   top: 0;
@@ -2266,11 +2254,24 @@ body {
 
 .login-card {
   width: 100%;
-  max-width: 450px;
+  max-width: 760px; /* Increased max-width for dual column layout */
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 24px;
+}
+
+.login-info-sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.login-form-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .login-card h3 {
