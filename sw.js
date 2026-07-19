@@ -1,4 +1,4 @@
-const CACHE_NAME = 'logic-lab-v1';
+const CACHE_NAME = 'logic-lab-v2';
 const ASSETS = [
   './',
   './index.html',

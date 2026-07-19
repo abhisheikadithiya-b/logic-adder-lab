@@ -28,6 +28,10 @@ const state = {
   // Module 4 (Sandbox) circuit editor data
   sandbox: {
     mission: 'ha', // 'ha' or 'fa'
+    a: 0,
+    b: 0,
+    cin: 0,
+    outputs: { sum: 0, carry: 0 },
     gates: [],     // { id, type, x, y, inputs: [{v, wireId}, {v, wireId}], output: {v, wireIds: []} }
     selectedPaletteType: null,
     wires: [],     // { id, fromNode: {type, id, pinIndex}, toNode: {type, id, pinIndex} }
@@ -763,6 +767,10 @@ function resetSandboxElements() {
   state.sandbox.wires = [];
   state.sandbox.selectedGate = null;
   state.sandbox.selectedWire = null;
+  state.sandbox.a = 0;
+  state.sandbox.b = 0;
+  state.sandbox.cin = 0;
+  state.sandbox.outputs = { sum: 0, carry: 0 };
   
   updatePaletteDraggables();
   updateSandboxSidepanels();
@@ -858,94 +866,12 @@ function updatePaletteDraggables() {
   });
 }
 
-// Side panels containing interactive Switch buttons and glowing output LEDs
+// Side panels containing interactive Switch buttons and glowing output LEDs (Deprecated - rendered on canvas now)
 function updateSandboxSidepanels() {
   const inPanel = document.getElementById('canvas-inputs-panel');
   const outPanel = document.getElementById('canvas-outputs-panel');
-
-  inPanel.innerHTML = '';
-  outPanel.innerHTML = '';
-
-  const isFA = (state.sandbox.mission === 'fa');
-
-  // Input Toggles
-  const inputsList = isFA ? ['A', 'B', 'Cin'] : ['A', 'B'];
-  inputsList.forEach((lbl, idx) => {
-    const btn = document.createElement('button');
-    btn.className = `bit-toggle ${state.sandbox[lbl.toLowerCase()] ? 'active' : ''}`;
-    btn.innerText = state.sandbox[lbl.toLowerCase()] || 0;
-    btn.title = `Toggle input ${lbl}`;
-    btn.addEventListener('click', () => {
-      logClick();
-      const val = state.sandbox[lbl.toLowerCase()] ? 0 : 1;
-      state.sandbox[lbl.toLowerCase()] = val;
-      btn.innerText = val;
-      btn.classList.toggle('active', val === 1);
-      playSound('click');
-      evaluateSandboxCircuit();
-      drawSandbox();
-    });
-    
-    const wrapper = document.createElement('div');
-    wrapper.style.display = 'flex';
-    wrapper.style.flexDirection = 'column';
-    wrapper.style.alignItems = 'center';
-    wrapper.style.gap = '4px';
-    
-    // Absolute position relative to canvas coordinate system (offset to the left of the pin at x = 30)
-    const pinPos = getPinPosition('input_port', lbl.toLowerCase());
-    wrapper.style.position = 'absolute';
-    wrapper.style.left = `${(15 / 700) * 100}%`;
-    wrapper.style.top = `${(pinPos.y / 480) * 100}%`;
-    wrapper.style.transform = 'translate(-50%, -25px)';
-    
-    const label = document.createElement('span');
-    label.style.fontFamily = 'JetBrains Mono';
-    label.style.fontSize = '10px';
-    label.style.color = 'var(--text-muted)';
-    label.innerText = lbl;
-
-    wrapper.appendChild(label);
-    wrapper.appendChild(btn);
-    inPanel.appendChild(wrapper);
-  });
-
-  // Output Indicators
-  const outputsList = ['SUM', 'CARRY'];
-  outputsList.forEach(lbl => {
-    const ledWrapper = document.createElement('div');
-    ledWrapper.className = 'led-node-overlay';
-    ledWrapper.style.display = 'flex';
-    ledWrapper.style.flexDirection = 'column';
-    ledWrapper.style.alignItems = 'center';
-    ledWrapper.style.gap = '4px';
-    
-    // Absolute position relative to canvas coordinate system (offset to the right of the pin at x = 670)
-    const pinPos = getPinPosition('output_port', lbl.toLowerCase());
-    ledWrapper.style.position = 'absolute';
-    ledWrapper.style.left = `${(685 / 700) * 100}%`;
-    ledWrapper.style.top = `${(pinPos.y / 480) * 100}%`;
-    ledWrapper.style.transform = 'translate(-50%, -23px)';
-
-    const led = document.createElement('div');
-    led.id = `sandbox-led-${lbl.toLowerCase()}`;
-    led.className = 'led-bulb small';
-    led.style.width = '18px';
-    led.style.height = '18px';
-    led.style.borderRadius = '50%';
-    led.style.border = '2px solid #4b5563';
-    led.style.background = '#1f2937';
-
-    const label = document.createElement('span');
-    label.style.fontFamily = 'JetBrains Mono';
-    label.style.fontSize = '10px';
-    label.style.color = 'var(--text-muted)';
-    label.innerText = lbl;
-
-    ledWrapper.appendChild(label);
-    ledWrapper.appendChild(led);
-    outPanel.appendChild(ledWrapper);
-  });
+  if (inPanel) inPanel.innerHTML = '';
+  if (outPanel) outPanel.innerHTML = '';
 }
 
 // Logic solver for Sandbox node inputs & wire loops
@@ -1005,29 +931,15 @@ function evaluateSandboxCircuit() {
 
   // Evaluate the global outputs SUM and CARRY
   const outPins = ['sum', 'carry'];
-  const results = {};
+  state.sandbox.outputs = {};
   
   outPins.forEach(p => {
-    const ledEl = document.getElementById(`sandbox-led-${p}`);
     const wire = state.sandbox.wires.find(w => w.toNode.type === 'output_port' && w.toNode.id === p);
-    
     let val = 0;
     if (wire) {
       val = evaluatePin(wire.fromNode.type, wire.fromNode.id, wire.fromNode.pinIndex);
     }
-    
-    results[p] = val;
-    if (ledEl) {
-      if (val === 1) {
-        ledEl.style.background = 'var(--accent-amber)';
-        ledEl.style.borderColor = 'var(--text-bright)';
-        ledEl.style.boxShadow = '0 0 10px var(--accent-amber)';
-      } else {
-        ledEl.style.background = '#1f2937';
-        ledEl.style.borderColor = '#4b5563';
-        ledEl.style.boxShadow = 'none';
-      }
-    }
+    state.sandbox.outputs[p] = val;
   });
 
   updateGraderStatus();
@@ -1307,6 +1219,31 @@ function getWireAtPosition(pos) {
 // Drag & drop mousedown handling
 function onSandboxMouseDown(e) {
   const pos = getMouseCoordinates(e);
+
+  // 0. Check if clicked an input toggle box area (to change input 0/1 state)
+  const isFA = (state.sandbox.mission === 'fa');
+  if (pos.x >= 0 && pos.x <= 35) {
+    let toggled = false;
+    if (Math.abs(pos.y - 120) <= 22) {
+      state.sandbox.a = state.sandbox.a ? 0 : 1;
+      toggled = true;
+    } else if (Math.abs(pos.y - 240) <= 22) {
+      state.sandbox.b = state.sandbox.b ? 0 : 1;
+      toggled = true;
+    } else if (isFA && Math.abs(pos.y - 360) <= 22) {
+      state.sandbox.cin = state.sandbox.cin ? 0 : 1;
+      toggled = true;
+    }
+    
+    if (toggled) {
+      logClick();
+      playSound('click');
+      evaluateSandboxCircuit();
+      drawSandbox();
+      return;
+    }
+  }
+
   logClick();
 
   // 1. Check if clicked a connector pin to start drawing a wire
@@ -1572,10 +1509,28 @@ function drawSandbox() {
   }
 
   // Draw global input/output connector nodes
+  // Local helper to draw rounded rectangles on the canvas
+  function drawRoundedRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+
+  // Draw global input/output connector nodes
   const isFA = (state.sandbox.mission === 'fa');
   const inNames = isFA ? ['a', 'b', 'cin'] : ['a', 'b'];
   inNames.forEach(inId => {
     const pos = getPinPosition('input_port', inId);
+    
+    // 1. Draw connection pin circle (at x = 30)
     sandboxCtx.beginPath();
     sandboxCtx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
     sandboxCtx.fillStyle = state.sandbox[inId] ? 'var(--accent-amber)' : 'var(--signal-low)';
@@ -1583,11 +1538,39 @@ function drawSandbox() {
     sandboxCtx.strokeStyle = '#fff';
     sandboxCtx.lineWidth = 1.5;
     sandboxCtx.stroke();
+
+    // 2. Draw interactive toggle box (rounded rect to the left)
+    const boxX = 6;
+    const boxY = pos.y - 9;
+    const boxW = 16;
+    const boxH = 18;
+    
+    sandboxCtx.fillStyle = state.sandbox[inId] ? 'var(--accent-amber)' : '#1f2937';
+    drawRoundedRect(sandboxCtx, boxX, boxY, boxW, boxH, 4);
+    sandboxCtx.fill();
+    
+    sandboxCtx.strokeStyle = state.sandbox[inId] ? '#fff' : '#4b5563';
+    sandboxCtx.lineWidth = 1;
+    sandboxCtx.stroke();
+
+    // Draw value text inside the box
+    sandboxCtx.fillStyle = state.sandbox[inId] ? '#0a0e1a' : '#fff';
+    sandboxCtx.font = 'bold 10px JetBrains Mono, monospace';
+    sandboxCtx.textAlign = 'center';
+    sandboxCtx.textBaseline = 'middle';
+    sandboxCtx.fillText(state.sandbox[inId] ? '1' : '0', boxX + boxW / 2, boxY + boxH / 2 + 1);
+
+    // Draw label text above the box
+    sandboxCtx.fillStyle = '#9ca3af';
+    sandboxCtx.font = '9px JetBrains Mono, monospace';
+    sandboxCtx.fillText(inId.toUpperCase(), boxX + boxW / 2, boxY - 7);
   });
 
   const outNames = ['sum', 'carry'];
   outNames.forEach(outId => {
     const pos = getPinPosition('output_port', outId);
+    
+    // 1. Draw connection pin circle (at x = 670)
     sandboxCtx.beginPath();
     sandboxCtx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
     sandboxCtx.fillStyle = 'var(--bg-dark)';
@@ -1595,6 +1578,35 @@ function drawSandbox() {
     sandboxCtx.strokeStyle = 'var(--border-color)';
     sandboxCtx.lineWidth = 1.5;
     sandboxCtx.stroke();
+
+    // 2. Draw LED bulb to the right (at x = 684)
+    const ledX = 684;
+    const ledY = pos.y;
+    const ledR = 8;
+    const val = (state.sandbox.outputs && state.sandbox.outputs[outId]) || 0;
+    
+    sandboxCtx.beginPath();
+    sandboxCtx.arc(ledX, ledY, ledR, 0, Math.PI * 2);
+    if (val) {
+      const grad = sandboxCtx.createRadialGradient(ledX - 2, ledY - 2, 1, ledX, ledY, ledR);
+      grad.addColorStop(0, '#a7f3d0'); // bright green center
+      grad.addColorStop(1, '#059669'); // darker green border
+      sandboxCtx.fillStyle = grad;
+    } else {
+      sandboxCtx.fillStyle = '#1f2937';
+    }
+    sandboxCtx.fill();
+    
+    sandboxCtx.strokeStyle = val ? '#fff' : '#4b5563';
+    sandboxCtx.lineWidth = 1.5;
+    sandboxCtx.stroke();
+
+    // Draw label text above the LED
+    sandboxCtx.fillStyle = '#9ca3af';
+    sandboxCtx.font = '9px JetBrains Mono, monospace';
+    sandboxCtx.textAlign = 'center';
+    sandboxCtx.textBaseline = 'middle';
+    sandboxCtx.fillText(outId.toUpperCase(), ledX, ledY - 15);
   });
 
   // Draw placed logic Gates on the grid
