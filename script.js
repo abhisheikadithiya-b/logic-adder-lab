@@ -1,6 +1,8 @@
-/**
- * Interactive Logic Adder Lab - Logic & Interface Engine
- */
+// ============================================================
+// DATABASE CONFIGURATION (FOR TEACHERS)
+// ============================================================
+// Paste your Google Sheets Web App URL here to hardcode it for all students:
+const DEFAULT_DATABASE_URL = "https://script.google.com/macros/s/AKfycbx6gnu8biblSFCjSEQxVaV1cKBXmLB1xhOno3qQ9IUQRtRNy3P_vF-LaxKqLf5iTGQUyw/exec";
 
 // Global App State
 const state = {
@@ -3984,7 +3986,7 @@ function initControls() {
 // ============================================================
 
 function getSheetURL() {
-  return localStorage.getItem('logic_adder_sheet_url') || '';
+  return localStorage.getItem('logic_adder_sheet_url') || DEFAULT_DATABASE_URL || '';
 }
 
 function setSheetURL(url) {
@@ -4174,50 +4176,6 @@ function initLandingPageModule() {
   });
 
   // Admin Database Settings handlers
-  const savedURL = getSheetURL();
-  if (savedURL) {
-    document.getElementById('admin-sheet-url').value = savedURL;
-  }
-
-  document.getElementById('btn-save-sheet-url').addEventListener('click', async () => {
-    logClick();
-    playSound('click');
-    const url = document.getElementById('admin-sheet-url').value.trim();
-    const statusEl = document.getElementById('sheet-status-msg');
-    const badge = document.getElementById('db-connection-badge');
-
-    if (!url) {
-      statusEl.className = 'sheet-status-msg error';
-      statusEl.innerText = '✗ Please enter a valid URL.';
-      statusEl.classList.remove('hidden');
-      return;
-    }
-
-    setSheetURL(url);
-    statusEl.className = 'sheet-status-msg info';
-    statusEl.innerText = '⏳ Testing connection...';
-    statusEl.classList.remove('hidden');
-
-    try {
-      const result = await testSheetConnection();
-      if (result.success) {
-        statusEl.className = 'sheet-status-msg success';
-        statusEl.innerText = '✓ Connected successfully! Sheet: ' + (result.sheetName || 'LogicAdderLab_DB');
-        badge.innerText = 'CONNECTED';
-        badge.className = 'badge connected';
-        playSound('correct');
-      } else {
-        throw new Error(result.message || 'Connection failed');
-      }
-    } catch (err) {
-      statusEl.className = 'sheet-status-msg error';
-      statusEl.innerText = '✗ Connection failed: ' + err.message;
-      badge.innerText = 'ERROR';
-      badge.className = 'badge disconnected';
-      playSound('incorrect');
-    }
-  });
-
   document.getElementById('btn-sync-from-sheet').addEventListener('click', async () => {
     logClick();
     playSound('click');
@@ -4225,7 +4183,7 @@ function initLandingPageModule() {
 
     if (!getSheetURL()) {
       statusEl.className = 'sheet-status-msg error';
-      statusEl.innerText = '✗ Save a Sheet URL first.';
+      statusEl.innerText = '✗ No Google Sheet URL configured.';
       statusEl.classList.remove('hidden');
       return;
     }
@@ -4540,6 +4498,41 @@ function loginAdmin() {
 
   renderAdminStats();
   renderAdminRoster();
+  
+  // Run automatic connection check on login
+  checkAdminDbConnection();
+}
+
+async function checkAdminDbConnection() {
+  const badge = document.getElementById('db-connection-badge');
+  const statusEl = document.getElementById('sheet-status-msg');
+  if (!badge) return;
+
+  badge.innerText = 'TESTING...';
+  badge.className = 'badge';
+
+  try {
+    const result = await testSheetConnection();
+    if (result.success) {
+      badge.innerText = 'CONNECTED';
+      badge.className = 'badge connected';
+      if (statusEl) {
+        statusEl.className = 'sheet-status-msg success';
+        statusEl.innerText = '✓ Connected to database: ' + (result.sheetName || 'LogicAdderLab_DB');
+        statusEl.classList.remove('hidden');
+      }
+    } else {
+      throw new Error(result.message || 'Connection test failed');
+    }
+  } catch (err) {
+    badge.innerText = 'DISCONNECTED';
+    badge.className = 'badge disconnected';
+    if (statusEl) {
+      statusEl.className = 'sheet-status-msg error';
+      statusEl.innerText = '✗ Database error: ' + err.message;
+      statusEl.classList.remove('hidden');
+    }
+  }
 }
 
 function getFormattedDate() {
@@ -4809,6 +4802,22 @@ window.addEventListener('DOMContentLoaded', () => {
   initBreadboardModule();
   initArcadeModule();
   initControls();
+
+  // Auto-config database URL if passed via query parameter (e.g. ?db=url)
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const dbUrl = urlParams.get('db') || urlParams.get('database') || urlParams.get('sheet');
+    if (dbUrl && dbUrl.startsWith('http')) {
+      localStorage.setItem('logic_adder_sheet_url', dbUrl);
+      console.log('Database URL configured from URL query parameter:', dbUrl);
+      
+      // Clean up the URL query parameter for a clean address bar
+      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+      window.history.replaceState({ path: newUrl }, '', newUrl);
+    }
+  } catch (e) {
+    console.error('Failed to parse database query parameter:', e);
+  }
 
   // Load state from local memory cache if present
   updateProgressUI();

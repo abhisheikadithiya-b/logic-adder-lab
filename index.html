@@ -402,18 +402,13 @@
     <!-- Database Settings Card -->
     <div class="admin-main-card admin-settings-card">
       <div class="settings-header">
-        <h3>⚙️ Database Settings</h3>
-        <span class="badge" id="db-connection-badge">NOT CONNECTED</span>
+        <h3>⚙️ Database Sync</h3>
+        <span class="badge" id="db-connection-badge">PENDING</span>
       </div>
-      <p class="hint">Connect your Google Sheet to sync student data. Paste the Google Apps Script Web App URL below.</p>
+      <p class="hint">Your Google Sheet database is hardcoded. Use the controls below to synchronize student records manually.</p>
       <div class="settings-form">
-        <div class="form-group">
-          <label for="admin-sheet-url">Google Apps Script Web App URL</label>
-          <input type="url" id="admin-sheet-url" placeholder="https://script.google.com/macros/s/.../exec">
-        </div>
-        <div class="settings-actions">
-          <button id="btn-save-sheet-url" class="btn primary">Save &amp; Test Connection</button>
-          <button id="btn-sync-from-sheet" class="btn secondary">Sync Students from Sheet</button>
+        <div class="settings-actions" style="margin-top: 10px;">
+          <button id="btn-sync-from-sheet" class="btn primary">Sync Students from Sheet</button>
         </div>
         <div id="sheet-status-msg" class="sheet-status-msg hidden"></div>
       </div>
