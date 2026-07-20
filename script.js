@@ -1932,9 +1932,9 @@ function initRippleCarryModule() {
 }
 
 function updateRippleStaticUI() {
-  // Convert binary array to string representations
-  const binA = state.ripple.a.join('');
-  const binB = state.ripple.b.join('');
+  // Convert binary array to string representations (reversing LSB-first array to MSB-first string)
+  const binA = [...state.ripple.a].reverse().join('');
+  const binB = [...state.ripple.b].reverse().join('');
   const decA = parseInt(binA, 2);
   const decB = parseInt(binB, 2);
 
@@ -1999,15 +1999,15 @@ function runRippleAnimation() {
 
   // Propagation execution scheduler
   let currentCarry = 0;
-  const A = [...state.ripple.a].reverse(); // A[0] is LSB
-  const B = [...state.ripple.b].reverse();
+  const A = [...state.ripple.a]; // A[0] is LSB
+  const B = [...state.ripple.b]; // B[0] is LSB
 
   const delayStep = state.ripple.delay;
 
   function processStage(stageIdx) {
     if (stageIdx > 3) {
       // Done propagation
-      const finalSum = parseInt(state.ripple.a.join(''), 2) + parseInt(state.ripple.b.join(''), 2);
+      const finalSum = parseInt([...state.ripple.a].reverse().join(''), 2) + parseInt([...state.ripple.b].reverse().join(''), 2);
       const binSum = finalSum.toString(2).padStart(5, '0');
       document.getElementById('formula-bin-sum').innerText = `${binSum}₂`;
       document.getElementById('formula-dec-sum').innerText = `(${finalSum})`;
@@ -3952,33 +3952,6 @@ function initControls() {
     switchModule('module-intro');
   });
 
-  // Save certificate export handler
-  const btnSaveCert = document.getElementById('btn-save-certificate');
-  if (btnSaveCert) {
-    btnSaveCert.addEventListener('click', () => {
-      playSound('click');
-      const card = document.querySelector('.mastery-summary-card');
-      
-      // Hide button temporarily to avoid rendering in image
-      btnSaveCert.style.display = 'none';
-      
-      html2canvas(card, {
-        backgroundColor: '#0a0e1a',
-        scale: 2,
-        useCORS: true
-      }).then(canvas => {
-        btnSaveCert.style.display = '';
-        const link = document.createElement('a');
-        link.download = 'logic_lab_mastery_certificate.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      }).catch(err => {
-        btnSaveCert.style.display = '';
-        console.error('Error generating certificate:', err);
-        alert('Could not save certificate. Please try again.');
-      });
-    });
-  }
 }
 
 // ============================================================
