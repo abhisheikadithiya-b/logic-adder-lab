@@ -772,12 +772,12 @@ function resetSandboxElements() {
   state.sandbox.cin = 0;
   state.sandbox.outputs = { sum: 0, carry: 0 };
   
-  updatePaletteDraggables();
   updateSandboxSidepanels();
   updateGraderStatus();
 }
 
 function addGateToSandbox(type, x, y) {
+  console.log(`[DEBUG_PLACE] addGateToSandbox called with type=${type} x=${x} y=${y}`);
   const snapX = Math.round(x / GRID_SIZE) * GRID_SIZE - 30; // center it offset
   const snapY = Math.round(y / GRID_SIZE) * GRID_SIZE - 20;
 
@@ -818,10 +818,26 @@ function updatePaletteDraggables() {
       e.dataTransfer.setData('gate-type', item.getAttribute('data-gate-type'));
     });
 
+    let lastTouchTime = 0;
+
     // Gate selection handler (shared by click and touch)
-    function selectGate(e) {
-      if (e && e.preventDefault) e.preventDefault();
+    function selectGate(e, isTouch) {
+      if (e && e.preventDefault && e.cancelable !== false) e.preventDefault();
+      
+      const now = Date.now();
+      if (isTouch) {
+        lastTouchTime = now;
+      } else {
+        // If a click event is received within 600ms of a touch event, it's a simulated click.
+        // Ignore it to prevent double-firing (select then immediately deselect).
+        if (now - lastTouchTime < 600) {
+          console.log('[DEBUG_PALETTE] Ignoring simulated click event to prevent double-fire.');
+          return;
+        }
+      }
+
       const type = item.getAttribute('data-gate-type');
+      console.log(`[DEBUG_PALETTE] selectGate called: type=${type} isTouch=${isTouch} currentSelected=${state.sandbox.selectedPaletteType}`);
       
       // If already selected, deselect
       if (state.sandbox.selectedPaletteType === type) {
@@ -837,14 +853,14 @@ function updatePaletteDraggables() {
     }
 
     // Click for desktop
-    item.addEventListener('click', selectGate);
+    item.addEventListener('click', (e) => selectGate(e, false));
 
-    // Touchend for mobile (fires reliably even when draggable="true")
-    item.addEventListener('touchend', (e) => {
-      e.preventDefault(); // Prevent subsequent click (double-fire)
+    // Touchstart for mobile (fires instantaneously, ignoring scrolling drag actions)
+    item.addEventListener('touchstart', (e) => {
+      if (e.cancelable) e.preventDefault(); // Prevent subsequent click (double-fire)
       e.stopPropagation();
-      selectGate(e);
-    });
+      selectGate(e, true);
+    }, { passive: false });
   });
 
   const wrapper = document.querySelector('.sandbox-canvas-wrapper');
@@ -1095,9 +1111,14 @@ function getMouseCoordinates(e) {
   const widthRatio = rect.width > 0 ? (sandboxCanvas.width / rect.width) : 1;
   const heightRatio = rect.height > 0 ? (sandboxCanvas.height / rect.height) : 1;
 
+  const calculatedX = (clientX - rect.left) * widthRatio;
+  const calculatedY = (clientY - rect.top) * heightRatio;
+
+  console.log(`[DEBUG_COORD] type=${e.type} clientX=${clientX} clientY=${clientY} rectLeft=${rect.left} rectTop=${rect.top} rectWidth=${rect.width} rectHeight=${rect.height} => x=${calculatedX} y=${calculatedY}`);
+
   return {
-    x: (clientX - rect.left) * widthRatio,
-    y: (clientY - rect.top) * heightRatio
+    x: calculatedX,
+    y: calculatedY
   };
 }
 
@@ -1105,7 +1126,7 @@ function getMouseCoordinates(e) {
 function getPinPosition(type, id, pinIdx) {
   if (type === 'input_port') {
     const isFA = (state.sandbox.mission === 'fa');
-    const x = 30;
+    const x = 42;
     if (id === 'a') return { x, y: 120 };
     if (id === 'b') return { x, y: 240 };
     if (id === 'cin') return { x, y: 360 };
@@ -1222,7 +1243,7 @@ function onSandboxMouseDown(e) {
 
   // 0. Check if clicked an input toggle box area (to change input 0/1 state)
   const isFA = (state.sandbox.mission === 'fa');
-  if (pos.x >= 0 && pos.x <= 35) {
+  if (pos.x >= 0 && pos.x <= 55) {
     let toggled = false;
     if (Math.abs(pos.y - 120) <= 22) {
       state.sandbox.a = state.sandbox.a ? 0 : 1;
@@ -1286,6 +1307,7 @@ function onSandboxMouseDown(e) {
   }
 
   // 4. Tap-to-place check
+  console.log(`[DEBUG_MOUSEDOWN] selectedPaletteType=${state.sandbox.selectedPaletteType} pos.x=${pos.x} pos.y=${pos.y}`);
   if (state.sandbox.selectedPaletteType) {
     addGateToSandbox(state.sandbox.selectedPaletteType, pos.x, pos.y);
     state.sandbox.selectedPaletteType = null;
@@ -1305,6 +1327,29 @@ function onSandboxMouseMove(e) {
   const pos = getMouseCoordinates(e);
   state.sandbox.mousePos = pos;
   document.getElementById('canvas-coordinates').innerText = `X: ${Math.round(pos.x)}, Y: ${Math.round(pos.y)}`;
+
+  // Set cursor feedback dynamically
+  let cursorStyle = 'default';
+  if (state.sandbox.draggingGate || state.sandbox.connectingPin) {
+    cursorStyle = state.sandbox.draggingGate ? 'grabbing' : 'crosshair';
+  } else {
+    const pin = getPinAtPosition(pos);
+    const gate = getGateAtPosition(pos);
+    const isFA = (state.sandbox.mission === 'fa');
+    // Check if hovering over input toggle boxes (x <= 55)
+    const isOverToggle = pos.x >= 0 && pos.x <= 55 && (
+      Math.abs(pos.y - 120) <= 22 || 
+      Math.abs(pos.y - 240) <= 22 || 
+      (isFA && Math.abs(pos.y - 360) <= 22)
+    );
+    
+    if (pin || gate || isOverToggle) {
+      cursorStyle = gate ? 'grab' : 'pointer';
+    }
+  }
+  if (sandboxCanvas) {
+    sandboxCanvas.style.cursor = cursorStyle;
+  }
 
   // Moving a gate on the grid workspace
   if (state.sandbox.draggingGate) {
@@ -1386,15 +1431,10 @@ function onSandboxTouchStart(e) {
   }
 
   if (e.touches && e.touches.length === 1) {
-    const pos = getMouseCoordinates(e);
-    const pin = getPinAtPosition(pos);
-    const gate = getGateAtPosition(pos);
-    
-    // Only prevent default (stop scrolling) if interacting with interactive elements
-    if ((pin && pin.isOutput) || gate) {
-      e.preventDefault();
-    }
-    
+    // Always prevent default on single-finger touch to stop browser
+    // from consuming the gesture as scroll/pan, which blocks gate
+    // placement and dragging on mobile devices.
+    e.preventDefault();
     onSandboxMouseDown(e);
   }
 }
@@ -1405,10 +1445,9 @@ function onSandboxTouchMove(e) {
   }
 
   if (e.touches && e.touches.length === 1) {
-    // Only prevent default (stop scrolling) if currently dragging or wiring
-    if (state.sandbox.draggingGate || state.sandbox.connectingPin) {
-      e.preventDefault();
-    }
+    // Always prevent default to stop page scrolling while finger
+    // is moving on the canvas (dragging gates, drawing wires, etc.)
+    e.preventDefault();
     onSandboxMouseMove(e);
   }
 }
@@ -1430,12 +1469,25 @@ function onSandboxTouchEnd(e) {
 function drawSandbox() {
   if (!sandboxCtx) return;
   
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  
+  const theme = {
+    bgDark: isLight ? '#ffffff' : '#080b15',
+    bgPanel: isLight ? '#f7f8fa' : '#111827',
+    borderColor: isLight ? '#d8dbe0' : '#374151',
+    signalLow: isLight ? '#d5d9e0' : '#2b3648',
+    accentAmber: isLight ? '#b45309' : '#ff9f1c',
+    accentCyan: isLight ? '#0284c7' : '#00d2ff',
+    textBright: isLight ? '#10141c' : '#f8fafc',
+    textMuted: isLight ? '#6b7280' : '#9ca3af',
+  };
+  
   // Clear
-  sandboxCtx.fillStyle = '#080b15';
+  sandboxCtx.fillStyle = theme.bgDark;
   sandboxCtx.fillRect(0, 0, sandboxCanvas.width, sandboxCanvas.height);
 
   // Draw grid background dots
-  sandboxCtx.fillStyle = 'rgba(255,255,255,0.03)';
+  sandboxCtx.fillStyle = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.03)';
   for (let x = GRID_SIZE; x < sandboxCanvas.width; x += GRID_SIZE) {
     for (let y = GRID_SIZE; y < sandboxCanvas.height; y += GRID_SIZE) {
       sandboxCtx.beginPath();
@@ -1467,18 +1519,18 @@ function drawSandbox() {
     
     if (wireActive) {
       // 1. Draw glowing background shadow (wide solid amber)
-      sandboxCtx.strokeStyle = 'rgba(255, 159, 28, 0.25)';
+      sandboxCtx.strokeStyle = isLight ? 'rgba(180, 83, 9, 0.15)' : 'rgba(255, 159, 28, 0.25)';
       sandboxCtx.lineWidth = 6;
       sandboxCtx.stroke();
       
       // 2. Draw solid amber core wire
-      sandboxCtx.strokeStyle = isSelected ? '#00d2ff' : '#ff9f1c';
+      sandboxCtx.strokeStyle = isSelected ? theme.accentCyan : theme.accentAmber;
       sandboxCtx.lineWidth = isSelected ? 3.5 : 2.5;
       sandboxCtx.stroke();
 
       // 3. Draw moving bright signal dashes
       sandboxCtx.save();
-      sandboxCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; // bright signal pulses
+      sandboxCtx.strokeStyle = isLight ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.9)'; // bright signal pulses
       sandboxCtx.lineWidth = isSelected ? 3.0 : 2.0;
       sandboxCtx.setLineDash([8, 12]); // 8px pulse, 12px gap
       sandboxCtx.lineDashOffset = -((Date.now() / 30) % 20); // scroll direction (flowing forward)
@@ -1486,7 +1538,7 @@ function drawSandbox() {
       sandboxCtx.restore();
     } else {
       // Inactive wire
-      sandboxCtx.strokeStyle = isSelected ? '#00d2ff' : '#2b3648';
+      sandboxCtx.strokeStyle = isSelected ? theme.accentCyan : theme.signalLow;
       sandboxCtx.lineWidth = isSelected ? 3.5 : 2.5;
       sandboxCtx.stroke();
     }
@@ -1500,7 +1552,7 @@ function drawSandbox() {
     sandboxCtx.beginPath();
     sandboxCtx.moveTo(p1.x, p1.y);
     sandboxCtx.bezierCurveTo(p1.x + 50, p1.y, p2.x - 50, p2.y, p2.x, p2.y);
-    sandboxCtx.strokeStyle = '#00d2ff';
+    sandboxCtx.strokeStyle = theme.accentCyan;
     sandboxCtx.lineWidth = 2;
     sandboxCtx.setLineDash([6, 6]);
     sandboxCtx.lineDashOffset = -((Date.now() / 20) % 12);
@@ -1533,35 +1585,35 @@ function drawSandbox() {
     // 1. Draw connection pin circle (at x = 30)
     sandboxCtx.beginPath();
     sandboxCtx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
-    sandboxCtx.fillStyle = state.sandbox[inId] ? '#ff9f1c' : '#2b3648';
+    sandboxCtx.fillStyle = state.sandbox[inId] ? theme.accentAmber : theme.signalLow;
     sandboxCtx.fill();
-    sandboxCtx.strokeStyle = '#fff';
+    sandboxCtx.strokeStyle = isLight ? theme.borderColor : '#fff';
     sandboxCtx.lineWidth = 1.5;
     sandboxCtx.stroke();
 
     // 2. Draw interactive toggle box (rounded rect to the left)
-    const boxX = 6;
+    const boxX = 8;
     const boxY = pos.y - 9;
-    const boxW = 16;
+    const boxW = 18;
     const boxH = 18;
     
-    sandboxCtx.fillStyle = state.sandbox[inId] ? '#ff9f1c' : '#1f2937';
+    sandboxCtx.fillStyle = state.sandbox[inId] ? theme.accentAmber : (isLight ? '#eef0f3' : '#1f2937');
     drawRoundedRect(sandboxCtx, boxX, boxY, boxW, boxH, 4);
     sandboxCtx.fill();
     
-    sandboxCtx.strokeStyle = state.sandbox[inId] ? '#fff' : '#4b5563';
+    sandboxCtx.strokeStyle = state.sandbox[inId] ? (isLight ? theme.accentAmber : '#fff') : (isLight ? '#d8dbe0' : '#4b5563');
     sandboxCtx.lineWidth = 1;
     sandboxCtx.stroke();
 
     // Draw value text inside the box
-    sandboxCtx.fillStyle = state.sandbox[inId] ? '#0a0e1a' : '#fff';
+    sandboxCtx.fillStyle = state.sandbox[inId] ? (isLight ? '#fff' : '#0a0e1a') : theme.textBright;
     sandboxCtx.font = 'bold 10px JetBrains Mono, monospace';
     sandboxCtx.textAlign = 'center';
     sandboxCtx.textBaseline = 'middle';
     sandboxCtx.fillText(state.sandbox[inId] ? '1' : '0', boxX + boxW / 2, boxY + boxH / 2 + 1);
 
     // Draw label text above the box
-    sandboxCtx.fillStyle = '#9ca3af';
+    sandboxCtx.fillStyle = theme.textMuted;
     sandboxCtx.font = '9px JetBrains Mono, monospace';
     sandboxCtx.fillText(inId.toUpperCase(), boxX + boxW / 2, boxY - 7);
   });
@@ -1573,9 +1625,9 @@ function drawSandbox() {
     // 1. Draw connection pin circle (at x = 670)
     sandboxCtx.beginPath();
     sandboxCtx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
-    sandboxCtx.fillStyle = '#0a0e1a';
+    sandboxCtx.fillStyle = theme.bgDark;
     sandboxCtx.fill();
-    sandboxCtx.strokeStyle = '#374151';
+    sandboxCtx.strokeStyle = theme.borderColor;
     sandboxCtx.lineWidth = 1.5;
     sandboxCtx.stroke();
 
@@ -1589,20 +1641,25 @@ function drawSandbox() {
     sandboxCtx.arc(ledX, ledY, ledR, 0, Math.PI * 2);
     if (val) {
       const grad = sandboxCtx.createRadialGradient(ledX - 2, ledY - 2, 1, ledX, ledY, ledR);
-      grad.addColorStop(0, '#a7f3d0'); // bright green center
-      grad.addColorStop(1, '#059669'); // darker green border
+      if (isLight) {
+        grad.addColorStop(0, '#a7f3d0'); // mint green center
+        grad.addColorStop(1, '#047857'); // dark green border
+      } else {
+        grad.addColorStop(0, '#a7f3d0');
+        grad.addColorStop(1, '#059669');
+      }
       sandboxCtx.fillStyle = grad;
     } else {
-      sandboxCtx.fillStyle = '#1f2937';
+      sandboxCtx.fillStyle = isLight ? '#eef0f3' : '#1f2937';
     }
     sandboxCtx.fill();
     
-    sandboxCtx.strokeStyle = val ? '#fff' : '#4b5563';
+    sandboxCtx.strokeStyle = val ? (isLight ? '#047857' : '#fff') : (isLight ? '#d8dbe0' : '#4b5563');
     sandboxCtx.lineWidth = 1.5;
     sandboxCtx.stroke();
 
     // Draw label text above the LED
-    sandboxCtx.fillStyle = '#9ca3af';
+    sandboxCtx.fillStyle = theme.textMuted;
     sandboxCtx.font = '9px JetBrains Mono, monospace';
     sandboxCtx.textAlign = 'center';
     sandboxCtx.textBaseline = 'middle';
@@ -1614,26 +1671,26 @@ function drawSandbox() {
     const isSelected = state.sandbox.selectedGate === gate;
     
     // Distinct aesthetic themes for different gate types
-    let bg = '#111827';
-    let border = '#374151';
-    let textCol = '#f8fafc';
+    let bg = isLight ? '#f7f8fa' : '#111827';
+    let border = isLight ? '#d8dbe0' : '#374151';
+    let textCol = theme.textBright;
     
     if (gate.type === 'AND') {
-      bg = '#112240'; // Steel blue
-      border = isSelected ? '#ff9f1c' : '#3b82f6'; // Blue
-      textCol = '#93c5fd';
+      bg = isLight ? '#eff6ff' : '#112240'; // Steel blue
+      border = isSelected ? theme.accentAmber : (isLight ? '#3b82f6' : '#3b82f6');
+      textCol = isLight ? '#1d4ed8' : '#93c5fd';
     } else if (gate.type === 'OR') {
-      bg = '#2d1a22'; // Burgundy
-      border = isSelected ? '#ff9f1c' : '#ec4899'; // Pink
-      textCol = '#f9a8d4';
+      bg = isLight ? '#fdf2f8' : '#2d1a22'; // Burgundy
+      border = isSelected ? theme.accentAmber : (isLight ? '#ec4899' : '#ec4899');
+      textCol = isLight ? '#be185d' : '#f9a8d4';
     } else if (gate.type === 'XOR') {
-      bg = '#162e2d'; // Teal
-      border = isSelected ? '#ff9f1c' : '#06b6d4'; // Cyan
-      textCol = '#67e8f9';
+      bg = isLight ? '#ecfeff' : '#162e2d'; // Teal
+      border = isSelected ? theme.accentAmber : (isLight ? '#06b6d4' : '#06b6d4');
+      textCol = isLight ? '#0891b2' : '#67e8f9';
     }
 
-    if (isSelected && border !== '#ff9f1c') {
-      border = '#00d2ff'; // Selected cyan highlight
+    if (isSelected && border !== theme.accentAmber) {
+      border = theme.accentCyan; // Selected cyan highlight
     }
 
     // Draw gate body block
@@ -1644,7 +1701,7 @@ function drawSandbox() {
     // Glow effect for active gates
     if (gate.output.v === 1) {
       sandboxCtx.shadowColor = border;
-      sandboxCtx.shadowBlur = 8;
+      sandboxCtx.shadowBlur = isLight ? 4 : 8; // Softer glow in light mode
     }
     
     // Draw rounded block rectangle representation
@@ -1666,9 +1723,9 @@ function drawSandbox() {
       const pinPos = getPinPosition('gate', gate.id, idx);
       sandboxCtx.beginPath();
       sandboxCtx.arc(pinPos.x, pinPos.y, 5, 0, Math.PI * 2);
-      sandboxCtx.fillStyle = gate.inputs[idx].v ? '#ff9f1c' : '#0a0e1a';
+      sandboxCtx.fillStyle = gate.inputs[idx].v ? theme.accentAmber : theme.bgDark;
       sandboxCtx.fill();
-      sandboxCtx.strokeStyle = '#374151';
+      sandboxCtx.strokeStyle = theme.borderColor;
       sandboxCtx.lineWidth = 1;
       sandboxCtx.stroke();
     });
@@ -1677,9 +1734,9 @@ function drawSandbox() {
     const outPos = getPinPosition('gate', gate.id, 'out');
     sandboxCtx.beginPath();
     sandboxCtx.arc(outPos.x, outPos.y, 5, 0, Math.PI * 2);
-    sandboxCtx.fillStyle = gate.output.v ? '#ff9f1c' : '#0a0e1a';
+    sandboxCtx.fillStyle = gate.output.v ? theme.accentAmber : theme.bgDark;
     sandboxCtx.fill();
-    sandboxCtx.strokeStyle = '#374151';
+    sandboxCtx.strokeStyle = theme.borderColor;
     sandboxCtx.lineWidth = 1;
     sandboxCtx.stroke();
   });
@@ -1687,6 +1744,8 @@ function drawSandbox() {
 
 // Tool events inside Sandbox Panel
 function initSandboxTools() {
+  updatePaletteDraggables();
+  
   const btnClear = document.getElementById('btn-clear-sandbox');
   const btnDelete = document.getElementById('btn-delete-selected');
   const missionHA = document.getElementById('btn-mission-ha');
@@ -2335,10 +2394,11 @@ function getCellValue(r, c) {
       return (r === 1 && c === 1) ? 1 : 0;
     }
   } else {
+    // Horizontal FA (Rows A: 0, 1; Columns BCin: 00=0, 01=1, 11=2, 10=3)
     if (target === 'sum') {
-      return (r === 0 && c === 1) || (r === 1 && c === 0) || (r === 2 && c === 1) || (r === 3 && c === 0) ? 1 : 0;
+      return (r === 0 && (c === 1 || c === 3)) || (r === 1 && (c === 0 || c === 2)) ? 1 : 0;
     } else {
-      return (r === 1 && c === 1) || (r === 2 && c === 0) || (r === 2 && c === 1) || (r === 3 && c === 1) ? 1 : 0;
+      return (r === 0 && c === 2) || (r === 1 && (c === 1 || c === 2 || c === 3)) ? 1 : 0;
     }
   }
 }
@@ -2381,18 +2441,20 @@ function validateKMapSelection() {
     const c1 = selection[0];
     const c2 = selection[1];
     
-    // Check horizontal adjacency (same row, adjacent columns)
-    const isRowAdjacent = (c1.r === c2.r && Math.abs(c1.c - c2.c) === 1);
-    
-    // Check vertical adjacency (same column, adjacent rows considering wrapping)
-    const numRows = state.kmap.view === 'ha' ? 2 : 4;
+    let isRowAdjacent = false;
     let isColAdjacent = false;
-    if (c1.c === c2.c) {
-      const diff = Math.abs(c1.r - c2.r);
-      if (numRows === 2) {
-        isColAdjacent = (diff === 1);
-      } else {
-        isColAdjacent = (diff === 1 || diff === 3); // wrapping row 0 and 3
+    
+    if (state.kmap.view === 'ha') {
+      isRowAdjacent = (c1.r === c2.r && Math.abs(c1.c - c2.c) === 1);
+      isColAdjacent = (c1.c === c2.c && Math.abs(c1.r - c2.r) === 1);
+    } else {
+      // Horizontal FA: Rows A (2), Cols BCin (4)
+      if (c1.r === c2.r) {
+        const diff = Math.abs(c1.c - c2.c);
+        isRowAdjacent = (diff === 1 || diff === 3); // column wrapping
+      }
+      if (c1.c === c2.c) {
+        isColAdjacent = (Math.abs(c1.r - c2.r) === 1);
       }
     }
 
@@ -2408,11 +2470,13 @@ function validateKMapSelection() {
   }
 
   if (size === 4) {
-    // Check vertical full column block
-    const allSameCol = selection.every(c => c.c === selection[0].c);
-    if (allSameCol && state.kmap.view === 'fa') {
-      createGroup(selection);
-      return;
+    if (state.kmap.view === 'fa') {
+      // Check horizontal full row block (4 cells in a row)
+      const allSameRow = selection.every(c => c.r === selection[0].r);
+      if (allSameRow) {
+        createGroup(selection);
+        return;
+      }
     }
 
     // Check 2x2 contiguous block
@@ -2421,15 +2485,25 @@ function validateKMapSelection() {
     if (rowsSet.size === 2 && colsSet.size === 2) {
       const rows = Array.from(rowsSet).sort((a,b)=>a-b);
       const cols = Array.from(colsSet).sort((a,b)=>a-b);
-      const isColsAdjacent = Math.abs(cols[0] - cols[1]) === 1;
-      const isRowsAdjacent = Math.abs(rows[0] - rows[1]) === 1 || (rows[0] === 0 && rows[1] === 3);
-      if (isColsAdjacent && isRowsAdjacent) {
-        createGroup(selection);
-        return;
+      
+      if (state.kmap.view === 'ha') {
+        const isColsAdjacent = Math.abs(cols[0] - cols[1]) === 1;
+        const isRowsAdjacent = Math.abs(rows[0] - rows[1]) === 1;
+        if (isColsAdjacent && isRowsAdjacent) {
+          createGroup(selection);
+          return;
+        }
+      } else {
+        const isRowsAdjacent = Math.abs(rows[0] - rows[1]) === 1;
+        const isColsAdjacent = Math.abs(cols[0] - cols[1]) === 1 || (cols[0] === 0 && cols[1] === 3); // col wrap
+        if (isColsAdjacent && isRowsAdjacent) {
+          createGroup(selection);
+          return;
+        }
       }
     }
 
-    showKMapAlert("Selected cells must form a contiguous 2x2 or column block!", false);
+    showKMapAlert("Selected cells must form a contiguous 2x2 or row block!", false);
     triggerKMapFlash('flash-incorrect');
     if (state.soundEnabled) playSound('incorrect');
     recordStudentMistake('K-Map: Size 4 Group Not Contiguous');
@@ -2449,21 +2523,21 @@ function getTermForGroup(cells) {
       return `${termA}·${termB}`;
     }
   } else {
-    // Full Adder (Rows: AB 00, 01, 11, 10; Columns: Cin 0, 1)
-    const rowAB = [
-      {a: 0, b: 0},
-      {a: 0, b: 1},
-      {a: 1, b: 1},
-      {a: 1, b: 0}
+    // Horizontal Full Adder (Rows A: 0, 1; Columns BCin: 00=0, 01=1, 11=2, 10=3)
+    const colBCin = [
+      {b: 0, cin: 0},
+      {b: 0, cin: 1},
+      {b: 1, cin: 1},
+      {b: 1, cin: 0}
     ];
 
     if (cells.length === 1) {
       const r = cells[0].r;
       const c = cells[0].c;
-      const ab = rowAB[r];
-      const termA = ab.a === 1 ? "A" : "A'";
-      const termB = ab.b === 1 ? "B" : "B'";
-      const termCin = c === 1 ? "Cin" : "Cin'";
+      const termA = r === 1 ? "A" : "A'";
+      const bc = colBCin[c];
+      const termB = bc.b === 1 ? "B" : "B'";
+      const termCin = bc.cin === 1 ? "Cin" : "Cin'";
       return `${termA}·${termB}·${termCin}`;
     }
 
@@ -2471,25 +2545,24 @@ function getTermForGroup(cells) {
       const r1 = cells[0].r, c1 = cells[0].c;
       const r2 = cells[1].r, c2 = cells[1].c;
 
-      if (r1 === r2) {
-        // Horizontal: Cin is eliminated
-        const ab = rowAB[r1];
-        const termA = ab.a === 1 ? "A" : "A'";
-        const termB = ab.b === 1 ? "B" : "B'";
-        return `${termA}·${termB}`;
+      if (c1 === c2) {
+        // Vertical: same column -> A is eliminated, B and Cin remain
+        const bc = colBCin[c1];
+        const termB = bc.b === 1 ? "B" : "B'";
+        const termCin = bc.cin === 1 ? "Cin" : "Cin'";
+        return `${termB}·${termCin}`;
       } else {
-        // Vertical: Cin is kept, one of AB is eliminated
-        const ab1 = rowAB[r1];
-        const ab2 = rowAB[r2];
-        const termCin = c1 === 1 ? "Cin" : "Cin'";
-        
-        let term = "";
-        if (ab1.a === ab2.a) {
-          term = ab1.a === 1 ? "A" : "A'";
-        } else if (ab1.b === ab2.b) {
-          term = ab1.b === 1 ? "B" : "B'";
+        // Horizontal: same row -> A remains, one of B or Cin is eliminated
+        const termA = r1 === 1 ? "A" : "A'";
+        const bc1 = colBCin[c1];
+        const bc2 = colBCin[c2];
+        if (bc1.b === bc2.b) {
+          const termB = bc1.b === 1 ? "B" : "B'";
+          return `${termA}·${termB}`;
+        } else {
+          const termCin = bc1.cin === 1 ? "Cin" : "Cin'";
+          return `${termA}·${termCin}`;
         }
-        return `${term}·${termCin}`;
       }
     }
 
@@ -2497,17 +2570,20 @@ function getTermForGroup(cells) {
       const cols = Array.from(new Set(cells.map(c=>c.c)));
       const rows = Array.from(new Set(cells.map(c=>c.r)));
 
-      if (rows.length === 4) {
-        // Full column: only Cin is constant
-        return cols[0] === 1 ? "Cin" : "Cin'";
+      if (cols.length === 4) {
+        // Full row: B and Cin are eliminated, A remains
+        return rows[0] === 1 ? "A" : "A'";
       }
 
       if (rows.length === 2 && cols.length === 2) {
-        // 2x2 block
-        const ab0 = rowAB[rows[0]];
-        const ab1 = rowAB[rows[1]];
-        if (ab0.a === ab1.a) return ab0.a === 1 ? "A" : "A'";
-        if (ab0.b === ab1.b) return ab0.b === 1 ? "B" : "B'";
+        // 2x2 block: A is eliminated, one of B or Cin is constant
+        const bc1 = colBCin[cols[0]];
+        const bc2 = colBCin[cols[1]];
+        if (bc1.b === bc2.b) {
+          return bc1.b === 1 ? "B" : "B'";
+        } else {
+          return bc1.cin === 1 ? "Cin" : "Cin'";
+        }
       }
     }
   }
@@ -2531,71 +2607,80 @@ function drawGroupLoop(cells, colorIndex) {
   pathElement.setAttribute("class", "kmap-loop-path");
   pathElement.style.setProperty("--loop-color", color);
 
-  if (view === 'ha') {
-    // 2x2 grid. Cell size 60x60, starting at X=40, Y=70
-    if (cells.length === 1) {
-      const r = cells[0].r;
-      const c = cells[0].c;
-      const x = 40 + c * 60;
-      const y = 70 + r * 60;
-      pathElement.setAttribute("d", `M ${x + 6} ${y + 30} A 24 24 0 1 1 ${x + 54} ${y + 30} A 24 24 0 1 1 ${x + 6} ${y + 30}`);
-    } else if (cells.length === 2) {
-      const r1 = cells[0].r, c1 = cells[0].c;
-      const r2 = cells[1].r, c2 = cells[1].c;
-      if (r1 === r2) {
-        const xMin = 40 + Math.min(c1, c2) * 60;
-        const y = 70 + r1 * 60;
-        pathElement.setAttribute("d", `M ${xMin + 6} ${y + 30} A 24 24 0 0 1 ${xMin + 114} ${y + 30} A 24 24 0 0 1 ${xMin + 6} ${y + 30}`);
-      } else {
-        const x = 40 + c1 * 60;
-        const yMin = 70 + Math.min(r1, r2) * 60;
-        pathElement.setAttribute("d", `M ${x + 30} ${yMin + 6} A 24 24 0 0 1 ${x + 30} ${yMin + 114} A 24 24 0 0 1 ${x + 30} ${yMin + 6}`);
-      }
-    }
-  } else {
-    // Full Adder 4x2 grid. Cell W=100, H=60, starting at X=120, Y=65
-    if (cells.length === 1) {
-      const r = cells[0].r;
-      const c = cells[0].c;
-      const x = 120 + c * 100;
-      const y = 65 + r * 60;
-      pathElement.setAttribute("d", `M ${x + 8} ${y + 30} A 22 22 0 0 1 ${x + 92} ${y + 30} A 22 22 0 0 1 ${x + 8} ${y + 30}`);
-    } else if (cells.length === 2) {
-      const r1 = cells[0].r, c1 = cells[0].c;
-      const r2 = cells[1].r, c2 = cells[1].c;
-      if (r1 === r2) {
-        const xMin = 120 + Math.min(c1, c2) * 100;
-        const y = 65 + r1 * 60;
-        pathElement.setAttribute("d", `M ${xMin + 8} ${y + 30} A 22 22 0 0 1 ${xMin + 192} ${y + 30} A 22 22 0 0 1 ${xMin + 8} ${y + 30}`);
-      } else {
-        const diff = Math.abs(r1 - r2);
-        const xCol = 120 + c1 * 100;
-        if (diff === 3) {
-          // Wrap-around split loop!
-          pathElement.setAttribute("d", `M ${xCol + 8} ${65 + 25} L ${xCol + 8} ${65 + 8} A 22 22 0 0 1 ${xCol + 92} ${65 + 8} L ${xCol + 92} ${65 + 25} M ${xCol + 8} ${245 + 35} L ${xCol + 8} ${245 + 52} A 22 22 0 0 0 ${xCol + 92} ${245 + 52} L ${xCol + 92} ${245 + 35}`);
-        } else {
-          const yMin = 65 + Math.min(r1, r2) * 60;
-          pathElement.setAttribute("d", `M ${xCol + 8} ${yMin + 30} A 22 22 0 0 1 ${xCol + 92} ${yMin + 90} A 22 22 0 0 1 ${xCol + 8} ${yMin + 30}`);
-        }
-      }
-    } else if (cells.length === 4) {
-      const rows = Array.from(new Set(cells.map(c=>c.r))).sort((a,b)=>a-b);
-      const cols = Array.from(new Set(cells.map(c=>c.c))).sort((a,b)=>a-b);
-      if (rows.length === 4) {
-        // Full column
-        const xCol = 120 + cols[0] * 100;
-        pathElement.setAttribute("d", `M ${xCol + 8} ${65 + 30} L ${xCol + 8} ${65 + 8} A 22 22 0 0 1 ${xCol + 92} ${65 + 8} L ${xCol + 92} ${245 + 52} A 22 22 0 0 1 ${xCol + 8} ${245 + 52} Z`);
-      } else {
-        const xMin = 120 + cols[0] * 100;
-        const yMin = 65 + rows[0] * 60;
-        if (rows[0] === 0 && rows[1] === 3) {
-          // Wrap-around quad
-          pathElement.setAttribute("d", `M ${xMin + 8} ${65 + 25} L ${xMin + 8} ${65 + 8} A 22 22 0 0 1 ${xMin + 192} ${65 + 8} L ${xMin + 192} ${65 + 25} M ${xMin + 8} ${245 + 35} L ${xMin + 8} ${245 + 52} A 22 22 0 0 0 ${xMin + 192} ${245 + 52} L ${xMin + 192} ${245 + 35}`);
-        } else {
-          pathElement.setAttribute("d", `M ${xMin + 8} ${yMin + 30} A 22 22 0 0 1 ${xMin + 192} ${yMin + 30} L ${xMin + 192} ${yMin + 90} A 22 22 0 0 1 ${xMin + 8} ${yMin + 90} Z`);
-        }
-      }
-    }
+  // Set grid dimensions based on view
+  const cellW = 60;
+  const cellH = 60;
+  const startX = view === 'ha' ? 40 : 120;
+  const startY = 70; // Both HA and FA start at Y=70 in the SVG now!
+
+  // Find cell boundaries in terms of rows and cols
+  const rows = cells.map(c => c.r);
+  const cols = cells.map(c => c.c);
+  const rMin = Math.min(...rows);
+  const rMax = Math.max(...rows);
+  const cMin = Math.min(...cols);
+  const cMax = Math.max(...cols);
+
+  const R = 24; // capsule corner radius
+  const pad = 6;
+
+  if (view === 'fa' && cells.length === 2 && rMin === rMax && Math.abs(cols[0] - cols[1]) === 3) {
+    // Horizontal wrap-around pair (col 0 and col 3)
+    const y = startY + rMin * cellH;
+    const top = y + pad;
+    const bottom = y + cellH - pad;
+    
+    // Left half (col 0)
+    const left1 = startX + pad;
+    const right1 = startX + cellW - 20; // open edge
+    const p1 = `M ${right1} ${top} H ${left1 + R} A ${R} ${R} 0 0 0 ${left1} ${top + R} V ${bottom - R} A ${R} ${R} 0 0 0 ${left1 + R} ${bottom} H ${right1}`;
+    
+    // Right half (col 3)
+    const left2 = startX + 3 * cellW + 20; // open edge
+    const right2 = startX + 4 * cellW - pad;
+    const p2 = `M ${left2} ${top} H ${right2 - R} A ${R} ${R} 0 0 1 ${right2} ${top + R} V ${bottom - R} A ${R} ${R} 0 0 1 ${right2 - R} ${bottom} H ${left2}`;
+    
+    pathElement.setAttribute("d", `${p1} ${p2}`);
+  }
+  else if (view === 'fa' && cells.length === 4 && rMin !== rMax && cols.includes(0) && cols.includes(3)) {
+    // 2x2 wrap-around quad (cols 0 and 3, rows 0 and 1)
+    const top = startY + pad;
+    const bottom = startY + 2 * cellH - pad;
+    
+    // Left half (col 0)
+    const left1 = startX + pad;
+    const right1 = startX + cellW - 20; // open edge
+    const p1 = `M ${right1} ${top} H ${left1 + R} A ${R} ${R} 0 0 0 ${left1} ${top + R} V ${bottom - R} A ${R} ${R} 0 0 0 ${left1 + R} ${bottom} H ${right1}`;
+    
+    // Right half (col 3)
+    const left2 = startX + 3 * cellW + 20; // open edge
+    const right2 = startX + 4 * cellW - pad;
+    const p2 = `M ${left2} ${top} H ${right2 - R} A ${R} ${R} 0 0 1 ${right2} ${top + R} V ${bottom - R} A ${R} ${R} 0 0 1 ${right2 - R} ${bottom} H ${left2}`;
+    
+    pathElement.setAttribute("d", `${p1} ${p2}`);
+  }
+  else {
+    // Normal contiguous loops (size 1, 2, or 4)
+    const left = startX + cMin * cellW + pad;
+    const right = startX + (cMax + 1) * cellW - pad;
+    const top = startY + rMin * cellH + pad;
+    const bottom = startY + (rMax + 1) * cellH - pad;
+
+    const W = right - left;
+    const H = bottom - top;
+
+    // Draw a perfectly sized rounded rect/capsule
+    const d = `M ${left + R} ${top} ` +
+              `H ${right - R} ` +
+              `A ${R} ${R} 0 0 1 ${right} ${top + R} ` +
+              `V ${bottom - R} ` +
+              `A ${R} ${R} 0 0 1 ${right - R} ${bottom} ` +
+              `H ${left + R} ` +
+              `A ${R} ${R} 0 0 1 ${left} ${bottom - R} ` +
+              `V ${top + R} ` +
+              `A ${R} ${R} 0 0 1 ${left + R} ${top} Z`;
+              
+    pathElement.setAttribute("d", d);
   }
 
   container.appendChild(pathElement);
@@ -2640,48 +2725,48 @@ function checkGuidedStep(selection, term) {
   } else {
     // Full Adder
     if (target === 'carry') {
-      if (step === 0) {
-        // Target is horizontal pair AB=11: cells (2,0) and (2,1)
-        const isTarget = selection.length === 2 && 
-                         selection.some(s => s.r === 2 && s.c === 0) && 
-                         selection.some(s => s.r === 2 && s.c === 1);
-        if (isTarget) {
-          showKMapAlert("Correct! You found the horizontal pair for AB=11. It simplifies to A·B.", true);
-          triggerKMapFlash('flash-correct');
-          state.kmap.guidedStep = 1;
-          return true;
-        } else {
-          showKMapAlert("Select the horizontal pair in row AB=11 (representing A=1, B=1).", false);
+      const isAB = selection.length === 2 && 
+                   selection.some(s => s.r === 1 && s.c === 2) && 
+                   selection.some(s => s.r === 1 && s.c === 3);
+                   
+      const isBCin = selection.length === 2 && 
+                     selection.some(s => s.r === 0 && s.c === 2) && 
+                     selection.some(s => s.r === 1 && s.c === 2);
+                     
+      const isACin = selection.length === 2 && 
+                     selection.some(s => s.r === 1 && s.c === 1) && 
+                     selection.some(s => s.r === 1 && s.c === 2);
+
+      if (isAB) {
+        const already = state.kmap.groups.some(g => g.term === "A·B");
+        if (already) {
+          showKMapAlert("You already grouped the A·B loop!", false);
           return false;
         }
-      } else if (step === 1) {
-        // Target is vertical pair Cin=1, B=1: cells (1,1) and (2,1)
-        const isTarget = selection.length === 2 && 
-                         selection.some(s => s.r === 1 && s.c === 1) && 
-                         selection.some(s => s.r === 2 && s.c === 1);
-        if (isTarget) {
-          showKMapAlert("Correct! You found the vertical pair representing B·Cin.", true);
-          triggerKMapFlash('flash-correct');
-          state.kmap.guidedStep = 2;
-          return true;
-        } else {
-          showKMapAlert("Select the vertical pair in column Cin=1 representing B=1 (rows AB=01 and AB=11).", false);
+        showKMapAlert("Correct! You found the loop representing A·B.", true);
+        triggerKMapFlash('flash-correct');
+        return true;
+      } else if (isBCin) {
+        const already = state.kmap.groups.some(g => g.term === "B·Cin");
+        if (already) {
+          showKMapAlert("You already grouped the B·Cin loop!", false);
           return false;
         }
-      } else if (step === 2) {
-        // Target is vertical pair Cin=1, A=1: cells (2,1) and (3,1)
-        const isTarget = selection.length === 2 && 
-                         selection.some(s => s.r === 2 && s.c === 1) && 
-                         selection.some(s => s.r === 3 && s.c === 1);
-        if (isTarget) {
-          showKMapAlert("Correct! You found the vertical pair representing A·Cin.", true);
-          triggerKMapFlash('flash-correct');
-          state.kmap.guidedStep = 3;
-          return true;
-        } else {
-          showKMapAlert("Select the vertical pair in column Cin=1 representing A=1 (rows AB=11 and AB=10).", false);
+        showKMapAlert("Correct! You found the loop representing B·Cin.", true);
+        triggerKMapFlash('flash-correct');
+        return true;
+      } else if (isACin) {
+        const already = state.kmap.groups.some(g => g.term === "A·Cin");
+        if (already) {
+          showKMapAlert("You already grouped the A·Cin loop!", false);
           return false;
         }
+        showKMapAlert("Correct! You found the loop representing A·Cin.", true);
+        triggerKMapFlash('flash-correct');
+        return true;
+      } else {
+        showKMapAlert("Invalid selection. Try to find one of the three 2-cell adjacent loops (representing AB, BCin, or ACin).", false);
+        return false;
       }
     } else {
       // SUM: 4 individual cells
@@ -2691,7 +2776,7 @@ function checkGuidedStep(selection, term) {
       }
       if (selection.length === 1) {
         const r = selection[0].r, c = selection[0].c;
-        const isValidSumCell = (r === 0 && c === 1) || (r === 1 && c === 0) || (r === 2 && c === 1) || (r === 3 && c === 0);
+        const isValidSumCell = (r === 0 && (c === 1 || c === 3)) || (r === 1 && (c === 0 || c === 2));
         if (isValidSumCell) {
           const already = state.kmap.groups.some(g => g.cells[0].r === r && g.cells[0].c === c);
           if (already) {
@@ -2825,12 +2910,17 @@ function updateGuidedInstructions() {
     }
   } else {
     if (target === 'carry') {
-      if (step === 0) {
-        instructions = "Step 1/3: Select the horizontal pair of 1s in row AB=11 (representing A=1, B=1) and click 'Group Selection'.";
-      } else if (step === 1) {
-        instructions = "Step 2/3: Now select the vertical pair of 1s in column Cin=1 representing B=1 (rows AB=01 and AB=11) and click 'Group Selection'.";
-      } else if (step === 2) {
-        instructions = "Step 3/3: Finally, select the vertical pair of 1s in column Cin=1 representing A=1 (rows AB=11 and AB=10) and click 'Group Selection'.";
+      const hasAB = state.kmap.groups.some(g => g.term === "A·B");
+      const hasBCin = state.kmap.groups.some(g => g.term === "B·Cin");
+      const hasACin = state.kmap.groups.some(g => g.term === "A·Cin");
+      
+      const missing = [];
+      if (!hasAB) missing.push("AB (row A=1, cols BCin=11 & 10)");
+      if (!hasBCin) missing.push("BCin (col BCin=11, rows A=0 & 1)");
+      if (!hasACin) missing.push("ACin (row A=1, cols BCin=01 & 11)");
+      
+      if (missing.length > 0) {
+        instructions = `Find and group the loops representing: ${missing.join(", ")}. Select 2 adjacent 1s and click 'Group Selection'.`;
       } else {
         instructions = "Success! You found all 3 loops. These represent the terms AB, BCin, and ACin. Thus Cout = AB + BCin + ACin. They overlap beautifully!";
       }
@@ -2858,7 +2948,7 @@ function checkKMapCompletion() {
       if (target === 'carry' && numGroups === 1) done = true;
       if (target === 'sum' && numGroups === 2) done = true;
     } else {
-      if (target === 'carry' && state.kmap.guidedStep === 3) done = true;
+      if (target === 'carry' && numGroups === 3) done = true;
       if (target === 'sum' && numGroups === 4) done = true;
     }
 
@@ -3000,6 +3090,28 @@ function resetKMapLoops() {
   const cells = document.querySelectorAll('.kmap-cell-g');
   cells.forEach(cell => {
     cell.classList.remove('selected', 'grouped');
+    
+    // Dynamically update the cell text values to match the target (SUM or CARRY)
+    const mapType = cell.getAttribute('data-map');
+    const r = parseInt(cell.getAttribute('data-row'), 10);
+    const c = parseInt(cell.getAttribute('data-col'), 10);
+    
+    if (mapType === 'fa' && state.kmap.view === 'fa') {
+      const valText = cell.querySelector('.kmap-cell-val');
+      if (valText) {
+        valText.textContent = getCellValue(r, c);
+      }
+    } else if (mapType === 'ha-sum') {
+      const valText = cell.querySelector('.kmap-cell-val');
+      if (valText) {
+        valText.textContent = (r === 0 && c === 1) || (r === 1 && c === 0) ? 1 : 0;
+      }
+    } else if (mapType === 'ha-carry') {
+      const valText = cell.querySelector('.kmap-cell-val');
+      if (valText) {
+        valText.textContent = (r === 1 && c === 1) ? 1 : 0;
+      }
+    }
   });
 
   updateKMapEquation();
@@ -3762,6 +3874,8 @@ function endTimedRun() {
 function initControls() {
   const btnReset = document.getElementById('btn-global-reset');
   const soundToggle = document.getElementById('btn-sound-toggle');
+  const themeToggle = document.getElementById('btn-theme-toggle');
+  const landingThemeToggle = document.getElementById('btn-landing-theme-toggle');
   
   // Welcome Modal actions
   const soundModal = document.getElementById('sound-modal');
@@ -3780,10 +3894,32 @@ function initControls() {
 
   soundToggle.addEventListener('click', toggleSound);
 
+  const performThemeToggle = () => {
+    logClick();
+    playSound('click');
+    const currentTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    localStorage.setItem('logicAdderLab.theme', currentTheme);
+    if (typeof drawSandbox === 'function') {
+      drawSandbox();
+    }
+  };
+
+  if (themeToggle) {
+    themeToggle.addEventListener('click', performThemeToggle);
+  }
+  if (landingThemeToggle) {
+    landingThemeToggle.addEventListener('click', performThemeToggle);
+  }
+
   btnReset.addEventListener('click', () => {
     const proceed = confirm("Are you sure you want to reset all module completion progress?");
     if (proceed) {
+      const savedTheme = localStorage.getItem('logicAdderLab.theme');
       localStorage.clear();
+      if (savedTheme) {
+        localStorage.setItem('logicAdderLab.theme', savedTheme);
+      }
       state.completedModules.clear();
       state.arcade.score = 0;
       state.arcade.streak = 0;
@@ -3799,7 +3935,11 @@ function initControls() {
 
   // Module 8 Dashboard reset
   document.getElementById('btn-restart-lab').addEventListener('click', () => {
+    const savedTheme = localStorage.getItem('logicAdderLab.theme');
     localStorage.clear();
+    if (savedTheme) {
+      localStorage.setItem('logicAdderLab.theme', savedTheme);
+    }
     state.completedModules.clear();
     state.arcade.score = 0;
     state.arcade.streak = 0;
@@ -3999,6 +4139,40 @@ function initLandingPageModule() {
     document.getElementById('app-landing').classList.remove('hidden');
   });
 
+  document.getElementById('btn-logout').addEventListener('click', async () => {
+    logClick();
+    playSound('click');
+    
+    // Sync final stats to Google Sheet before clearing session memory
+    await syncStudentToSheet();
+    
+    // Clear user state
+    state.currentUser = null;
+    state.currentRoll = null;
+    state.currentClass = null;
+    state.completedModules = new Set();
+    state.clicksCount = 0;
+    state.correctCount = 0;
+    
+    // Reset login forms
+    const rollInput = document.getElementById('student-roll');
+    const classInput = document.getElementById('student-class');
+    const passInput = document.getElementById('student-password');
+    if (rollInput) rollInput.value = '';
+    if (classInput) classInput.value = '';
+    if (passInput) passInput.value = '';
+    
+    const errorEl = document.getElementById('login-error-msg');
+    if (errorEl) errorEl.innerText = '';
+    
+    // Transition screens
+    document.getElementById('app-trainer-container').classList.add('hidden');
+    document.getElementById('app-landing').classList.remove('hidden');
+    
+    // Reset window scroll to top of landing page
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  });
+
   // Admin Database Settings handlers
   const savedURL = getSheetURL();
   if (savedURL) {
@@ -4182,11 +4356,11 @@ function startHeroLoop() {
     const ledSum = document.getElementById('hero-led-sum');
     const ledCarry = document.getElementById('hero-led-carry');
     if (ledSum) {
-      ledSum.setAttribute('fill', sum ? 'var(--accent-cyan)' : '#1f2937');
+      ledSum.setAttribute('fill', sum ? 'var(--accent-cyan)' : 'var(--bg-input)');
       ledSum.style.filter = sum ? 'drop-shadow(0 0 5px rgba(0, 240, 255, 0.4))' : 'none';
     }
     if (ledCarry) {
-      ledCarry.setAttribute('fill', carry ? 'var(--accent-amber)' : '#1f2937');
+      ledCarry.setAttribute('fill', carry ? 'var(--accent-amber)' : 'var(--bg-input)');
       ledCarry.style.filter = carry ? 'drop-shadow(0 0 5px rgba(255, 160, 0, 0.4))' : 'none';
     }
   }, 2000);
@@ -4639,8 +4813,16 @@ window.addEventListener('DOMContentLoaded', () => {
   // Load state from local memory cache if present
   updateProgressUI();
 
-  // Register Service Worker for offline PWA support
-  if ('serviceWorker' in navigator) {
+  // Load manifest dynamically only on HTTP/HTTPS to prevent CORS errors under file:/// protocol
+  if (window.location.protocol !== 'file:') {
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = 'manifest.json';
+    document.head.appendChild(link);
+  }
+
+  // Register Service Worker for offline PWA support (only on supported web protocols)
+  if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
         .then(reg => console.log('ServiceWorker registered:', reg.scope))
