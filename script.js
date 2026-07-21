@@ -66,7 +66,8 @@ const state = {
     groups: [],
     guidedStep: 0,
     practiceChoices: [],
-    selectedChoiceIdx: -1
+    selectedChoiceIdx: -1,
+    completedGuidedTasks: new Set()
   },
 
   // Module 7 (Arcade) data
@@ -266,33 +267,94 @@ function logClick() {
   updateMasteryStats();
 }
 
+const MODULE_SEQUENCE = [
+  'module-intro',
+  'module-half-adder',
+  'module-full-adder',
+  'module-kmap',
+  'module-ripple-carry',
+  'module-breadboard',
+  'module-ha-practice',
+  'module-fa-practice',
+  'module-sandbox',
+  'module-arcade',
+  'module-mastery'
+];
+
+function isModuleUnlocked(moduleId) {
+  if (moduleId === 'module-intro' || moduleId === 'module-mastery') return true;
+  const idx = MODULE_SEQUENCE.indexOf(moduleId);
+  if (idx === -1) return true;
+  const prevModuleId = MODULE_SEQUENCE[idx - 1];
+  return state.completedModules.has(prevModuleId);
+}
+
+function showToast(message) {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerText = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
 function completeModule(moduleId) {
   if (!state.completedModules.has(moduleId)) {
     state.completedModules.add(moduleId);
     playSound('correct');
     updateProgressUI();
+    updateModuleNextButtons();
     updateStudentCompletionInRegistry();
     // Sync progress to Google Sheet (async, non-blocking)
     syncStudentToSheet();
   }
 }
 
+function updateModuleNextButtons() {
+  const nextBtns = document.querySelectorAll('.next-step-btn');
+  nextBtns.forEach(btn => {
+    const nextTarget = btn.getAttribute('data-next');
+    if (isModuleUnlocked(nextTarget)) {
+      btn.removeAttribute('disabled');
+      btn.classList.remove('disabled');
+    } else {
+      btn.setAttribute('disabled', 'true');
+      btn.classList.add('disabled');
+    }
+  });
+}
+
 function updateProgressUI() {
-  const total = 8; // Modules 1 to 8 (excluding mastery report)
+  const total = 10; // Modules 1 to 10 (excluding mastery report)
   const current = state.completedModules.size;
   const pct = Math.round((current / total) * 100);
   
   document.getElementById('completion-text').innerText = `${pct}%`;
   document.getElementById('completion-bar').style.width = `${pct}%`;
 
-  // Update navigation visual checkmarks
+  // Update navigation visual locks and checkmarks
   const navItems = document.querySelectorAll('.nav-item');
   navItems.forEach(item => {
     const target = item.getAttribute('data-target');
+    
+    // Checkmark/Completed status
     if (state.completedModules.has(target)) {
       item.classList.add('completed');
     } else {
       item.classList.remove('completed');
+    }
+
+    // Locked status
+    if (isModuleUnlocked(target)) {
+      item.classList.remove('locked');
+    } else {
+      item.classList.add('locked');
     }
   });
 
@@ -300,7 +362,7 @@ function updateProgressUI() {
 }
 
 function updateMasteryStats() {
-  document.getElementById('stat-modules-done').innerText = `${state.completedModules.size} / 8`;
+  document.getElementById('stat-modules-done').innerText = `${state.completedModules.size} / 10`;
   document.getElementById('stat-clicks-count').innerText = state.clicksCount;
   document.getElementById('stat-correct-count').innerText = state.correctCount;
   document.getElementById('stat-arcade-high').innerText = state.arcade.highScore;
@@ -313,6 +375,8 @@ function updateMasteryStats() {
     { id: 'badge-sandbox', unlocked: state.completedModules.has('module-sandbox') },
     { id: 'badge-ripple', unlocked: state.completedModules.has('module-ripple-carry') },
     { id: 'badge-breadboard', unlocked: state.completedModules.has('module-breadboard') },
+    { id: 'badge-ha-practice', unlocked: state.completedModules.has('module-ha-practice') },
+    { id: 'badge-fa-practice', unlocked: state.completedModules.has('module-fa-practice') },
     { id: 'badge-arcade', unlocked: state.arcade.highScore >= 150 }
   ];
 
@@ -367,11 +431,13 @@ function stopSandboxAnimation() {
 }
 
 function switchModule(targetId) {
-  playSound('click');
-  // Mark current as complete on navigation click to encourage user journey completion
-  if (state.activeModule !== 'module-arcade' && state.activeModule !== 'module-mastery' && state.activeModule !== 'module-sandbox' && state.activeModule !== 'module-kmap') {
-    completeModule(state.activeModule);
+  if (!isModuleUnlocked(targetId)) {
+    showToast("Please complete the current module to unlock the next step!");
+    if (state.soundEnabled) playSound('incorrect');
+    return;
   }
+
+  playSound('click');
 
   // Deactivate current
   document.getElementById(state.activeModule).classList.remove('active');
@@ -390,6 +456,7 @@ function switchModule(targetId) {
   }
 
   state.activeModule = targetId;
+  updateModuleNextButtons();
 
   // Sandbox setup or resize redraw if target is sandbox
   if (targetId === 'module-sandbox') {
@@ -2945,17 +3012,30 @@ function checkKMapCompletion() {
   const numGroups = state.kmap.groups.length;
 
   if (state.kmap.mode === 'guided') {
-    let done = false;
+    let taskKey = `${view}-${target}`;
+    let taskDone = false;
+    
     if (view === 'ha') {
-      if (target === 'carry' && numGroups === 1) done = true;
-      if (target === 'sum' && numGroups === 2) done = true;
+      if (target === 'carry' && numGroups === 1) taskDone = true;
+      if (target === 'sum' && numGroups === 2) taskDone = true;
     } else {
-      if (target === 'carry' && numGroups === 3) done = true;
-      if (target === 'sum' && numGroups === 4) done = true;
+      if (target === 'carry' && numGroups === 3) taskDone = true;
+      if (target === 'sum' && numGroups === 4) taskDone = true;
     }
 
-    if (done) {
-      completeModule('module-kmap');
+    if (taskDone) {
+      if (!state.kmap.completedGuidedTasks) {
+        state.kmap.completedGuidedTasks = new Set();
+      }
+      state.kmap.completedGuidedTasks.add(taskKey);
+      
+      const remaining = 4 - state.kmap.completedGuidedTasks.size;
+      if (remaining > 0) {
+        showKMapAlert(`Verified! ${state.kmap.completedGuidedTasks.size}/4 K-Map configurations complete. (${remaining} remaining)`, true);
+      } else {
+        showKMapAlert(`Congratulations! You have verified all 4 K-Map configurations. Proceed to Ripple Carry Playground!`, true);
+        completeModule('module-kmap');
+      }
     }
   }
 }
@@ -3272,7 +3352,6 @@ function initArcadeModule() {
       if (examResultOverlay) examResultOverlay.classList.add('hidden');
       if (examInitPanel) examInitPanel.classList.remove('hidden');
       if (arcadeStepFooter) arcadeStepFooter.classList.remove('hidden');
-      state.completedModules.add('module-arcade');
       updateProgressUI();
     });
   }
@@ -3364,11 +3443,19 @@ function initArcadeModule() {
       resBadge.innerText = "❌";
       recordStudentMistake("Exam: Terminated due to Security Violation limit");
     } else {
-      resTitle.innerText = "Exam Completed Successfully";
-      resTitle.style.color = "var(--accent-cyan)";
-      resMsg.innerText = "Your assessment details have been written to the database roster.";
-      resBadge.innerText = "🏆";
-      completeModule('module-arcade');
+      if (finalScore >= 50) {
+        resTitle.innerText = "Exam Completed Successfully";
+        resTitle.style.color = "var(--accent-cyan)";
+        resMsg.innerText = "Your assessment details have been written to the database roster. Access unlocked!";
+        resBadge.innerText = "🏆";
+        completeModule('module-arcade');
+      } else {
+        resTitle.innerText = "Exam Finished (Score: " + finalScore + ")";
+        resTitle.style.color = "var(--accent-amber)";
+        resMsg.innerText = "You scored " + finalScore + " points, which is less than the passing score of 50. Please retake the assessment to unlock the next module.";
+        resBadge.innerText = "✏️";
+        showToast("Score at least 50 points to complete this module!");
+      }
     }
 
     if (state.currentUser && state.currentUser !== 'Guest') {
@@ -3379,12 +3466,12 @@ function initArcadeModule() {
         registry[idx].correctCount = state.correctCount;
         registry[idx].accuracy = accuracy;
         registry[idx].lastActive = getFormattedDate();
-        if (!isViolated) {
+        if (!isViolated && finalScore >= 50) {
           if (!registry[idx].completedModules.includes('module-arcade')) {
             registry[idx].completedModules.push('module-arcade');
           }
-          registry[idx].completionPct = Math.round((registry[idx].completedModules.length / 8) * 100);
         }
+        registry[idx].completionPct = Math.round((registry[idx].completedModules.length / 10) * 100);
         localStorage.setItem('logic_adder_students', JSON.stringify(registry));
       }
     }
@@ -3994,7 +4081,7 @@ async function syncStudentToSheet() {
     await sheetFetch('saveProgress', {
       rollNo: state.currentRoll,
       completedModules: Array.from(state.completedModules).join(','),
-      completionPct: Math.round((state.completedModules.size / 8) * 100),
+      completionPct: Math.round((state.completedModules.size / 10) * 100),
       clicks: state.clicksCount,
       correct: state.correctCount,
       accuracy: state.clicksCount > 0 ? Math.round((state.correctCount / Math.max(1, state.correctCount + (state.clicksCount - state.correctCount))) * 100) : 100,
@@ -4532,7 +4619,7 @@ function updateStudentCompletionInRegistry() {
   let idx = registry.findIndex(s => s.rollNo === state.currentRoll);
   if (idx !== -1) {
     registry[idx].completedModules = Array.from(state.completedModules);
-    registry[idx].completionPct = Math.round((state.completedModules.size / 8) * 100);
+    registry[idx].completionPct = Math.round((state.completedModules.size / 10) * 100);
     registry[idx].lastActive = getFormattedDate();
     localStorage.setItem('logic_adder_students', JSON.stringify(registry));
   }
@@ -4644,7 +4731,7 @@ function renderAdminRoster() {
       <td><span class="badge secondary">${escapedClass}</span></td>
       <td>
         <div style="display:flex; align-items:center; gap:8px;">
-          <span>${completedLen} / 8</span>
+          <span>${completedLen} / 10</span>
           <div class="mini-bar-track" style="width:60px;"><div class="mini-bar-fill fill-green" style="width:${s.completionPct || 0}%;"></div></div>
         </div>
       </td>
@@ -4688,10 +4775,12 @@ function openStudentDossier(rollNo) {
     { id: "module-half-adder", label: "02. Half Adder Lab" },
     { id: "module-full-adder", label: "03. Full Adder Lab" },
     { id: "module-kmap", label: "04. K-Map Lab" },
-    { id: "module-sandbox", label: "05. Gate Sandbox" },
-    { id: "module-ripple-carry", label: "06. Ripple Playground" },
-    { id: "module-breadboard", label: "07. Breadboard/IC" },
-    { id: "module-arcade", label: "08. Logic Arcade" }
+    { id: "module-ripple-carry", label: "05. Ripple Playground" },
+    { id: "module-breadboard", label: "06. Breadboard/IC" },
+    { id: "module-ha-practice", label: "07. HA Practice" },
+    { id: "module-fa-practice", label: "08. FA Practice" },
+    { id: "module-sandbox", label: "09. Gate Sandbox" },
+    { id: "module-arcade", label: "10. Logic Arcade" }
   ];
 
   const modulesContainer = document.getElementById('admin-detail-modules');
@@ -4761,6 +4850,764 @@ function escapeHtml(str) {
   });
 }
 
+// MODULE 7 & 8: PRACTICE MODULES IMPLEMENTATIONS
+state.haPractice = {
+  truthTable: {
+    sum00: '', sum01: '', sum10: '', sum11: '',
+    carry00: '', carry01: '', carry10: '', carry11: ''
+  },
+  tableVerified: false,
+  kmapTarget: 'sum',
+  kmapCells: {
+    sum: [[0, 0], [0, 0]],
+    carry: [[0, 0], [0, 0]]
+  },
+  cellsVerified: { sum: false, carry: false },
+  groups: { sum: [], carry: [] },
+  selectedCells: [],
+  loopsVerified: { sum: false, carry: false }
+};
+
+state.faPractice = {
+  truthTable: {
+    sum000: '', sum001: '', sum010: '', sum011: '', sum100: '', sum101: '', sum110: '', sum111: '',
+    carry000: '', carry001: '', carry010: '', carry011: '', carry100: '', carry101: '', carry110: '', carry111: ''
+  },
+  tableVerified: false,
+  kmapTarget: 'sum',
+  kmapCells: {
+    sum: [[0,0,0,0], [0,0,0,0]],
+    carry: [[0,0,0,0], [0,0,0,0]]
+  },
+  cellsVerified: { sum: false, carry: false },
+  groups: { sum: [], carry: [] },
+  selectedCells: [],
+  loopsVerified: { sum: false, carry: false }
+};
+
+function initPracticeModules() {
+  // --- MODULE 7: HALF ADDER PRACTICE ---
+  const haTableButtons = document.querySelectorAll('#ha-practice-table .practice-cell-btn');
+  haTableButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (state.haPractice.tableVerified) return;
+      logClick();
+      playSound('click');
+      const inputs = btn.getAttribute('data-inputs');
+      const isSum = btn.classList.contains('sum-cell');
+      const key = (isSum ? 'sum' : 'carry') + inputs;
+      let val = state.haPractice.truthTable[key];
+      if (val === '') val = 0;
+      else if (val === 0) val = 1;
+      else val = '';
+      
+      state.haPractice.truthTable[key] = val;
+      btn.innerText = val === '' ? '?' : val;
+      btn.classList.toggle('filled', val !== '' && isSum);
+      btn.classList.toggle('filled-carry', val !== '' && !isSum);
+    });
+  });
+
+  document.getElementById('btn-ha-practice-verify-table').addEventListener('click', () => {
+    logClick();
+    const correctSum = { '00': 0, '01': 1, '10': 1, '11': 0 };
+    const correctCarry = { '00': 0, '01': 0, '10': 0, '11': 1 };
+    
+    let isCorrect = true;
+    for (let key in correctSum) {
+      if (state.haPractice.truthTable['sum' + key] !== correctSum[key]) isCorrect = false;
+      if (state.haPractice.truthTable['carry' + key] !== correctCarry[key]) isCorrect = false;
+    }
+    
+    const feedback = document.getElementById('ha-practice-table-feedback');
+    if (isCorrect) {
+      state.haPractice.tableVerified = true;
+      playSound('correct');
+      feedback.innerHTML = '<span class="status-badge success">CORRECT</span> Truth Table correct! Complete the K-Maps next.';
+      feedback.style.color = 'var(--accent-green)';
+      showToast("Truth table verified! Complete the K-maps next.");
+    } else {
+      playSound('incorrect');
+      feedback.innerHTML = '<span class="status-badge error">INCORRECT</span> Some values are wrong or incomplete. Check your math and try again!';
+      feedback.style.color = '#ff0055';
+    }
+  });
+
+  const btnHaTargetSum = document.getElementById('btn-ha-practice-target-sum');
+  const btnHaTargetCarry = document.getElementById('btn-ha-practice-target-carry');
+  
+  if (btnHaTargetSum) {
+    btnHaTargetSum.addEventListener('click', () => {
+      logClick();
+      playSound('click');
+      state.haPractice.kmapTarget = 'sum';
+      updateHAPracticeKMapDisplay();
+    });
+  }
+  
+  if (btnHaTargetCarry) {
+    btnHaTargetCarry.addEventListener('click', () => {
+      logClick();
+      playSound('click');
+      state.haPractice.kmapTarget = 'carry';
+      updateHAPracticeKMapDisplay();
+    });
+  }
+
+  const haKMapCells = document.querySelectorAll('#module-ha-practice .practice-kmap-cell-g');
+  haKMapCells.forEach(cell => {
+    cell.addEventListener('click', () => {
+      if (!state.haPractice.tableVerified) {
+        showToast("Verify the Truth Table first!");
+        return;
+      }
+      const target = state.haPractice.kmapTarget;
+      const r = parseInt(cell.getAttribute('data-row'), 10);
+      const c = parseInt(cell.getAttribute('data-col'), 10);
+
+      if (state.haPractice.cellsVerified[target]) {
+        // Selection mode
+        const val = state.haPractice.kmapCells[target][r][c];
+        if (val === 0) {
+          showToast("You can only select cells with value 1!");
+          return;
+        }
+        logClick();
+        playSound('click');
+        const idx = state.haPractice.selectedCells.findIndex(co => co.r === r && co.c === c);
+        if (idx !== -1) {
+          state.haPractice.selectedCells.splice(idx, 1);
+          cell.classList.remove('selected');
+        } else {
+          state.haPractice.selectedCells.push({ r, c });
+          cell.classList.add('selected');
+        }
+      } else {
+        // Toggle value mode
+        logClick();
+        playSound('click');
+        const currentVal = state.haPractice.kmapCells[target][r][c];
+        const newVal = currentVal ? 0 : 1;
+        state.haPractice.kmapCells[target][r][c] = newVal;
+        cell.querySelector('.kmap-cell-val').textContent = newVal;
+      }
+    });
+  });
+
+  const btnHaVerifyCells = document.getElementById('btn-ha-practice-verify-cells');
+  if (btnHaVerifyCells) {
+    btnHaVerifyCells.addEventListener('click', () => {
+      if (!state.haPractice.tableVerified) {
+        showToast("Verify the Truth Table first!");
+        return;
+      }
+      logClick();
+      const target = state.haPractice.kmapTarget;
+      const cells = state.haPractice.kmapCells[target];
+      
+      let isCorrect = true;
+      if (target === 'sum') {
+        if (cells[0][0] !== 0 || cells[0][1] !== 1 || cells[1][0] !== 1 || cells[1][1] !== 0) isCorrect = false;
+      } else {
+        if (cells[0][0] !== 0 || cells[0][1] !== 0 || cells[1][0] !== 0 || cells[1][1] !== 1) isCorrect = false;
+      }
+      
+      const feedback = document.getElementById('ha-practice-kmap-feedback');
+      if (isCorrect) {
+        state.haPractice.cellsVerified[target] = true;
+        playSound('correct');
+        feedback.innerHTML = '<span class="status-badge success">CORRECT</span> K-Map cells are correct! Now group them into loops.';
+        feedback.style.color = 'var(--accent-green)';
+        updateHAPracticeKMapDisplay();
+      } else {
+        playSound('incorrect');
+        feedback.innerHTML = '<span class="status-badge error">INCORRECT</span> Cell values do not match the truth table outputs!';
+        feedback.style.color = '#ff0055';
+      }
+    });
+  }
+
+  const btnHaGroup = document.getElementById('btn-ha-practice-group');
+  if (btnHaGroup) {
+    btnHaGroup.addEventListener('click', () => {
+      logClick();
+      const target = state.haPractice.kmapTarget;
+      const selection = [...state.haPractice.selectedCells];
+      if (selection.length === 0) {
+        showToast("Select cells first!");
+        return;
+      }
+      if (selection.length !== 1) {
+        showToast("Diagonal cells cannot be grouped! Group them individually (size 1).");
+        return;
+      }
+      
+      // Add loop
+      const term = getHAPracticeTerm(selection);
+      state.haPractice.groups[target].push({ cells: selection, term });
+      
+      // Clear selection classes
+      const cellsEl = document.querySelectorAll('#module-ha-practice .practice-kmap-cell-g');
+      cellsEl.forEach(c => c.classList.remove('selected'));
+      state.haPractice.selectedCells = [];
+      
+      playSound('correct');
+      drawHAPracticeLoops();
+    });
+  }
+
+  const btnHaClearLoops = document.getElementById('btn-ha-practice-clear-loops');
+  if (btnHaClearLoops) {
+    btnHaClearLoops.addEventListener('click', () => {
+      logClick();
+      playSound('click');
+      const target = state.haPractice.kmapTarget;
+      state.haPractice.groups[target] = [];
+      state.haPractice.loopsVerified[target] = false;
+      drawHAPracticeLoops();
+    });
+  }
+
+  const btnHaVerifyLoops = document.getElementById('btn-ha-practice-verify-loops');
+  if (btnHaVerifyLoops) {
+    btnHaVerifyLoops.addEventListener('click', () => {
+      logClick();
+      const target = state.haPractice.kmapTarget;
+      const groups = state.haPractice.groups[target];
+      
+      let isCorrect = true;
+      if (target === 'sum') {
+        if (groups.length !== 2) isCorrect = false;
+        const cellsGrouped = groups.map(g => g.cells[0]);
+        const hasCell1 = cellsGrouped.some(c => c.r === 0 && c.c === 1);
+        const hasCell2 = cellsGrouped.some(c => c.r === 1 && c.c === 0);
+        if (!hasCell1 || !hasCell2) isCorrect = false;
+      } else {
+        if (groups.length !== 1) isCorrect = false;
+        const c = groups[0].cells[0];
+        if (c.r !== 1 || c.c !== 1) isCorrect = false;
+      }
+      
+      const feedback = document.getElementById('ha-practice-kmap-feedback');
+      if (isCorrect) {
+        state.haPractice.loopsVerified[target] = true;
+        playSound('correct');
+        feedback.innerHTML = '<span class="status-badge success">CORRECT</span> Loops verified successfully!';
+        feedback.style.color = 'var(--accent-green)';
+        
+        if (state.haPractice.loopsVerified.sum && state.haPractice.loopsVerified.carry) {
+          completeModule('module-ha-practice');
+          showToast("Module 7 (Half Adder Practice) completed!");
+        }
+      } else {
+        playSound('incorrect');
+        feedback.innerHTML = '<span class="status-badge error">INCORRECT</span> Loops are incorrect or incomplete. Make sure you group all 1s correctly!';
+        feedback.style.color = '#ff0055';
+      }
+    });
+  }
+
+  function getHAPracticeTerm(cells) {
+    if (cells.length === 1) {
+      const r = cells[0].r;
+      const c = cells[0].c;
+      const termA = c === 1 ? "A" : "A'";
+      const termB = r === 1 ? "B" : "B'";
+      return `${termA}·${termB}`;
+    }
+    return "";
+  }
+
+  function drawHAPracticeLoops() {
+    const target = state.haPractice.kmapTarget;
+    const groups = state.haPractice.groups[target];
+    const container = document.getElementById('ha-practice-kmap-loops');
+    if (!container) return;
+    container.innerHTML = "";
+    
+    const colors = ['#00f0ff', '#ff9f1c'];
+    groups.forEach((g, idx) => {
+      const color = colors[idx % colors.length];
+      const cells = g.cells;
+      const r = cells[0].r;
+      const c = cells[0].c;
+      const x = 40 + c * 60 + 6;
+      const y = 70 + r * 60 + 6;
+      const size = 60 - 12;
+      
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("x", x);
+      rect.setAttribute("y", y);
+      rect.setAttribute("width", size);
+      rect.setAttribute("height", size);
+      rect.setAttribute("rx", 16);
+      rect.setAttribute("fill", "none");
+      rect.setAttribute("stroke", color);
+      rect.setAttribute("stroke-width", 3);
+      container.appendChild(rect);
+    });
+    
+    let lhs = target === 'sum' ? "SUM (S) = " : "CARRY (C) = ";
+    const eqLhsEl = document.getElementById('ha-practice-kmap-eq-lhs');
+    if (eqLhsEl) eqLhsEl.innerHTML = lhs;
+    
+    let terms = groups.map(g => `<span class="formula-term">${g.term}</span>`).join(" + ");
+    if (groups.length === 0) terms = "...";
+    const eqRhsEl = document.getElementById('ha-practice-kmap-eq-rhs');
+    if (eqRhsEl) eqRhsEl.innerHTML = terms;
+  }
+
+  function updateHAPracticeKMapDisplay() {
+    const target = state.haPractice.kmapTarget;
+    if (btnHaTargetSum) btnHaTargetSum.classList.toggle('active', target === 'sum');
+    if (btnHaTargetCarry) btnHaTargetCarry.classList.toggle('active', target === 'carry');
+    
+    const titleEl = document.getElementById('ha-practice-kmap-title');
+    if (titleEl) {
+      titleEl.textContent = target === 'sum' ? "SUM (S) K-Map" : "CARRY (C) K-Map";
+      titleEl.style.fill = target === 'sum' ? "var(--accent-cyan)" : "var(--accent-amber)";
+    }
+    
+    const cells = document.querySelectorAll('#module-ha-practice .practice-kmap-cell-g');
+    cells.forEach(cell => {
+      const r = parseInt(cell.getAttribute('data-row'), 10);
+      const c = parseInt(cell.getAttribute('data-col'), 10);
+      const valEl = cell.querySelector('.kmap-cell-val');
+      if (valEl) valEl.textContent = state.haPractice.kmapCells[target][r][c];
+      cell.classList.remove('selected');
+    });
+    
+    state.haPractice.selectedCells = [];
+    const feedbackEl = document.getElementById('ha-practice-kmap-feedback');
+    if (feedbackEl) feedbackEl.innerText = "";
+    
+    const isVerified = state.haPractice.cellsVerified[target];
+    const btnGroupEl = document.getElementById('btn-ha-practice-group');
+    if (btnGroupEl) btnGroupEl.classList.toggle('hidden', !isVerified);
+    const btnClearEl = document.getElementById('btn-ha-practice-clear-loops');
+    if (btnClearEl) btnClearEl.classList.toggle('hidden', !isVerified);
+    const btnVerifyEl = document.getElementById('btn-ha-practice-verify-loops');
+    if (btnVerifyEl) btnVerifyEl.classList.toggle('hidden', !isVerified);
+    const eqBoxEl = document.getElementById('ha-practice-kmap-equation-box');
+    if (eqBoxEl) eqBoxEl.classList.toggle('hidden', !isVerified);
+    
+    drawHAPracticeLoops();
+  }
+
+
+  // --- MODULE 8: FULL ADDER PRACTICE ---
+  const faTableButtons = document.querySelectorAll('#fa-practice-table .practice-cell-btn');
+  faTableButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (state.faPractice.tableVerified) return;
+      logClick();
+      playSound('click');
+      const inputs = btn.getAttribute('data-inputs');
+      const isSum = btn.classList.contains('sum-cell');
+      const key = (isSum ? 'sum' : 'carry') + inputs;
+      let val = state.faPractice.truthTable[key];
+      if (val === '') val = 0;
+      else if (val === 0) val = 1;
+      else val = '';
+      
+      state.faPractice.truthTable[key] = val;
+      btn.innerText = val === '' ? '?' : val;
+      btn.classList.toggle('filled', val !== '' && isSum);
+      btn.classList.toggle('filled-carry', val !== '' && !isSum);
+    });
+  });
+
+  document.getElementById('btn-fa-practice-verify-table').addEventListener('click', () => {
+    logClick();
+    const correctSum = { '000': 0, '001': 1, '010': 1, '011': 0, '100': 1, '101': 0, '110': 0, '111': 1 };
+    const correctCarry = { '000': 0, '001': 0, '010': 0, '011': 1, '100': 0, '101': 1, '110': 1, '111': 1 };
+    
+    let isCorrect = true;
+    for (let key in correctSum) {
+      if (state.faPractice.truthTable['sum' + key] !== correctSum[key]) isCorrect = false;
+      if (state.faPractice.truthTable['carry' + key] !== correctCarry[key]) isCorrect = false;
+    }
+    
+    const feedback = document.getElementById('fa-practice-table-feedback');
+    if (isCorrect) {
+      state.faPractice.tableVerified = true;
+      playSound('correct');
+      feedback.innerHTML = '<span class="status-badge success">CORRECT</span> Truth Table correct! Complete the K-Maps next.';
+      feedback.style.color = 'var(--accent-green)';
+      showToast("Truth table verified! Complete the K-maps next.");
+    } else {
+      playSound('incorrect');
+      feedback.innerHTML = '<span class="status-badge error">INCORRECT</span> Some values are wrong or incomplete. Check your math and try again!';
+      feedback.style.color = '#ff0055';
+    }
+  });
+
+  const btnFaTargetSum = document.getElementById('btn-fa-practice-target-sum');
+  const btnFaTargetCarry = document.getElementById('btn-fa-practice-target-carry');
+  
+  if (btnFaTargetSum) {
+    btnFaTargetSum.addEventListener('click', () => {
+      logClick();
+      playSound('click');
+      state.faPractice.kmapTarget = 'sum';
+      updateFAPracticeKMapDisplay();
+    });
+  }
+  
+  if (btnFaTargetCarry) {
+    btnFaTargetCarry.addEventListener('click', () => {
+      logClick();
+      playSound('click');
+      state.faPractice.kmapTarget = 'carry';
+      updateFAPracticeKMapDisplay();
+    });
+  }
+
+  const faKMapCells = document.querySelectorAll('#module-fa-practice .practice-kmap-cell-g');
+  faKMapCells.forEach(cell => {
+    cell.addEventListener('click', () => {
+      if (!state.faPractice.tableVerified) {
+        showToast("Verify the Truth Table first!");
+        return;
+      }
+      const target = state.faPractice.kmapTarget;
+      const r = parseInt(cell.getAttribute('data-row'), 10);
+      const c = parseInt(cell.getAttribute('data-col'), 10);
+
+      if (state.faPractice.cellsVerified[target]) {
+        // Selection mode
+        const val = state.faPractice.kmapCells[target][r][c];
+        if (val === 0) {
+          showToast("You can only select cells with value 1!");
+          return;
+        }
+        logClick();
+        playSound('click');
+        const idx = state.faPractice.selectedCells.findIndex(co => co.r === r && co.c === c);
+        if (idx !== -1) {
+          state.faPractice.selectedCells.splice(idx, 1);
+          cell.classList.remove('selected');
+        } else {
+          state.faPractice.selectedCells.push({ r, c });
+          cell.classList.add('selected');
+        }
+      } else {
+        // Toggle value mode
+        logClick();
+        playSound('click');
+        const currentVal = state.faPractice.kmapCells[target][r][c];
+        const newVal = currentVal ? 0 : 1;
+        state.faPractice.kmapCells[target][r][c] = newVal;
+        cell.querySelector('.kmap-cell-val').textContent = newVal;
+      }
+    });
+  });
+
+  const btnFaVerifyCells = document.getElementById('btn-fa-practice-verify-cells');
+  if (btnFaVerifyCells) {
+    btnFaVerifyCells.addEventListener('click', () => {
+      if (!state.faPractice.tableVerified) {
+        showToast("Verify the Truth Table first!");
+        return;
+      }
+      logClick();
+      const target = state.faPractice.kmapTarget;
+      const cells = state.faPractice.kmapCells[target];
+      
+      let isCorrect = true;
+      if (target === 'sum') {
+        const expected = [[0, 1, 0, 1], [1, 0, 1, 0]];
+        for (let r = 0; r < 2; r++) {
+          for (let c = 0; c < 4; c++) {
+            if (cells[r][c] !== expected[r][c]) isCorrect = false;
+          }
+        }
+      } else {
+        const expected = [[0, 0, 1, 0], [0, 1, 1, 1]];
+        for (let r = 0; r < 2; r++) {
+          for (let c = 0; c < 4; c++) {
+            if (cells[r][c] !== expected[r][c]) isCorrect = false;
+          }
+        }
+      }
+      
+      const feedback = document.getElementById('fa-practice-kmap-feedback');
+      if (isCorrect) {
+        state.faPractice.cellsVerified[target] = true;
+        playSound('correct');
+        feedback.innerHTML = '<span class="status-badge success">CORRECT</span> K-Map cells are correct! Now group them into loops.';
+        feedback.style.color = 'var(--accent-green)';
+        updateFAPracticeKMapDisplay();
+      } else {
+        playSound('incorrect');
+        feedback.innerHTML = '<span class="status-badge error">INCORRECT</span> Cell values do not match the truth table outputs!';
+        feedback.style.color = '#ff0055';
+      }
+    });
+  }
+
+  const btnFaGroup = document.getElementById('btn-fa-practice-group');
+  if (btnFaGroup) {
+    btnFaGroup.addEventListener('click', () => {
+      logClick();
+      const target = state.faPractice.kmapTarget;
+      const selection = [...state.faPractice.selectedCells];
+      if (selection.length === 0) {
+        showToast("Select cells first!");
+        return;
+      }
+      if (selection.length !== 1 && selection.length !== 2) {
+        showToast("Groups must be of size 1 or 2!");
+        return;
+      }
+      
+      if (selection.length === 2) {
+        const r0 = selection[0].r, c0 = selection[0].c;
+        const r1 = selection[1].r, c1 = selection[1].c;
+        const isAdjacent = (r0 === r1 && Math.abs(c0 - c1) === 1) || (c0 === c1 && Math.abs(r0 - r1) === 1);
+        if (!isAdjacent) {
+          showToast("Selected cells must be adjacent!");
+          return;
+        }
+      }
+      
+      const term = getFAPracticeTerm(selection);
+      state.faPractice.groups[target].push({ cells: selection, term });
+      
+      const cellsEl = document.querySelectorAll('#module-fa-practice .practice-kmap-cell-g');
+      cellsEl.forEach(c => c.classList.remove('selected'));
+      state.faPractice.selectedCells = [];
+      
+      playSound('correct');
+      drawFAPracticeLoops();
+    });
+  }
+
+  const btnFaClearLoops = document.getElementById('btn-fa-practice-clear-loops');
+  if (btnFaClearLoops) {
+    btnFaClearLoops.addEventListener('click', () => {
+      logClick();
+      playSound('click');
+      const target = state.faPractice.kmapTarget;
+      state.faPractice.groups[target] = [];
+      state.faPractice.loopsVerified[target] = false;
+      drawFAPracticeLoops();
+    });
+  }
+
+  const btnFaVerifyLoops = document.getElementById('btn-fa-practice-verify-loops');
+  if (btnFaVerifyLoops) {
+    btnFaVerifyLoops.addEventListener('click', () => {
+      logClick();
+      const target = state.faPractice.kmapTarget;
+      const groups = state.faPractice.groups[target];
+      
+      let isCorrect = true;
+      if (target === 'sum') {
+        if (groups.length !== 4) isCorrect = false;
+        const grouped = groups.map(g => g.cells[0]);
+        const expected = [{r:0,c:1}, {r:0,c:3}, {r:1,c:0}, {r:1,c:2}];
+        expected.forEach(ex => {
+          const found = grouped.some(g => g.r === ex.r && g.c === ex.c);
+          if (!found) isCorrect = false;
+        });
+      } else {
+        if (groups.length !== 3) isCorrect = false;
+        let hasV = false, hasH1 = false, hasH2 = false;
+        groups.forEach(g => {
+          if (g.cells.length === 2) {
+            const c0 = g.cells[0], c1 = g.cells[1];
+            if (c0.c === 2 && c1.c === 2) hasV = true;
+            if (c0.r === 1 && c1.r === 1) {
+              const cols = [c0.c, c1.c];
+              if (cols.includes(1) && cols.includes(2)) hasH1 = true;
+              if (cols.includes(2) && cols.includes(3)) hasH2 = true;
+            }
+          }
+        });
+        if (!hasV || !hasH1 || !hasH2) isCorrect = false;
+      }
+      
+      const feedback = document.getElementById('fa-practice-kmap-feedback');
+      if (isCorrect) {
+        state.faPractice.loopsVerified[target] = true;
+        playSound('correct');
+        feedback.innerHTML = '<span class="status-badge success">CORRECT</span> Loops verified successfully!';
+        feedback.style.color = 'var(--accent-green)';
+        
+        if (state.faPractice.loopsVerified.sum && state.faPractice.loopsVerified.carry) {
+          completeModule('module-fa-practice');
+          showToast("Module 8 (Full Adder Practice) completed!");
+        }
+      } else {
+        playSound('incorrect');
+        feedback.innerHTML = '<span class="status-badge error">INCORRECT</span> Loops are incorrect or incomplete. Make sure you find all simplifications!';
+        feedback.style.color = '#ff0055';
+      }
+    });
+  }
+
+  function getFAPracticeTerm(cells) {
+    const colBCin = [
+      { b: 0, cin: 0 },
+      { b: 0, cin: 1 },
+      { b: 1, cin: 1 },
+      { b: 1, cin: 0 }
+    ];
+    
+    if (cells.length === 1) {
+      const r = cells[0].r;
+      const c = cells[0].c;
+      const termA = r === 1 ? "A" : "A'";
+      const bc = colBCin[c];
+      const termB = bc.b === 1 ? "B" : "B'";
+      const termCin = bc.cin === 1 ? "Cin" : "Cin'";
+      return `${termA}·${termB}·${termCin}`;
+    } else if (cells.length === 2) {
+      const r0 = cells[0].r, c0 = cells[0].c;
+      const r1 = cells[1].r, c1 = cells[1].c;
+      
+      if (c0 === c1) {
+        const bc = colBCin[c0];
+        const termB = bc.b === 1 ? "B" : "B'";
+        const termCin = bc.cin === 1 ? "Cin" : "Cin'";
+        return `${termB}·${termCin}`;
+      } else {
+        const termA = r0 === 1 ? "A" : "A'";
+        const bc0 = colBCin[c0];
+        const bc1 = colBCin[c1];
+        if (bc0.b === bc1.b) {
+          const termB = bc0.b === 1 ? "B" : "B'";
+          return `${termA}·${termB}`;
+        } else {
+          const termCin = bc0.cin === 1 ? "Cin" : "Cin'";
+          return `${termA}·${termCin}`;
+        }
+      }
+    }
+    return "";
+  }
+
+  function drawFAPracticeLoops() {
+    const target = state.faPractice.kmapTarget;
+    const groups = state.faPractice.groups[target];
+    const container = document.getElementById('fa-practice-kmap-loops');
+    if (!container) return;
+    container.innerHTML = "";
+    
+    const colors = ['#00f0ff', '#ff9f1c', '#ec4899'];
+    groups.forEach((g, idx) => {
+      const color = colors[idx % colors.length];
+      const cells = g.cells;
+      
+      if (cells.length === 1) {
+        const r = cells[0].r;
+        const c = cells[0].c;
+        const x = 120 + c * 60 + 6;
+        const y = 70 + r * 60 + 6;
+        const size = 60 - 12;
+        
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", x);
+        rect.setAttribute("y", y);
+        rect.setAttribute("width", size);
+        rect.setAttribute("height", size);
+        rect.setAttribute("rx", 16);
+        rect.setAttribute("fill", "none");
+        rect.setAttribute("stroke", color);
+        rect.setAttribute("stroke-width", 3);
+        container.appendChild(rect);
+      } else if (cells.length === 2) {
+        const r0 = cells[0].r, c0 = cells[0].c;
+        const r1 = cells[1].r, c1 = cells[1].c;
+        const rMin = Math.min(r0, r1);
+        const cMin = Math.min(c0, c1);
+        
+        if (r0 === r1) {
+          const x = 120 + cMin * 60 + 6;
+          const y = 70 + rMin * 60 + 6;
+          const w = 120 - 12;
+          const h = 60 - 12;
+          
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", x);
+          rect.setAttribute("y", y);
+          rect.setAttribute("width", w);
+          rect.setAttribute("height", h);
+          rect.setAttribute("rx", 16);
+          rect.setAttribute("fill", "none");
+          rect.setAttribute("stroke", color);
+          rect.setAttribute("stroke-width", 3);
+          container.appendChild(rect);
+        } else {
+          const x = 120 + cMin * 60 + 6;
+          const y = 70 + rMin * 60 + 6;
+          const w = 60 - 12;
+          const h = 120 - 12;
+          
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", x);
+          rect.setAttribute("y", y);
+          rect.setAttribute("width", w);
+          rect.setAttribute("height", h);
+          rect.setAttribute("rx", 16);
+          rect.setAttribute("fill", "none");
+          rect.setAttribute("stroke", color);
+          rect.setAttribute("stroke-width", 3);
+          container.appendChild(rect);
+        }
+      }
+    });
+    
+    let lhs = target === 'sum' ? "SUM = " : "CARRY (Cout) = ";
+    const eqLhsEl = document.getElementById('fa-practice-kmap-eq-lhs');
+    if (eqLhsEl) eqLhsEl.innerHTML = lhs;
+    
+    let terms = groups.map(g => `<span class="formula-term">${g.term}</span>`).join(" + ");
+    if (groups.length === 0) terms = "...";
+    const eqRhsEl = document.getElementById('fa-practice-kmap-eq-rhs');
+    if (eqRhsEl) eqRhsEl.innerHTML = terms;
+  }
+
+  function updateFAPracticeKMapDisplay() {
+    const target = state.faPractice.kmapTarget;
+    if (btnFaTargetSum) btnFaTargetSum.classList.toggle('active', target === 'sum');
+    if (btnFaTargetCarry) btnFaTargetCarry.classList.toggle('active', target === 'carry');
+    
+    const titleEl = document.getElementById('fa-practice-kmap-title');
+    if (titleEl) {
+      titleEl.textContent = target === 'sum' ? "SUM K-Map" : "CARRY (Cout) K-Map";
+      titleEl.style.fill = target === 'sum' ? "var(--accent-cyan)" : "var(--accent-amber)";
+    }
+    
+    const cells = document.querySelectorAll('#module-fa-practice .practice-kmap-cell-g');
+    cells.forEach(cell => {
+      const r = parseInt(cell.getAttribute('data-row'), 10);
+      const c = parseInt(cell.getAttribute('data-col'), 10);
+      const valEl = cell.querySelector('.kmap-cell-val');
+      if (valEl) valEl.textContent = state.faPractice.kmapCells[target][r][c];
+      cell.classList.remove('selected');
+    });
+    
+    state.faPractice.selectedCells = [];
+    const feedbackEl = document.getElementById('fa-practice-kmap-feedback');
+    if (feedbackEl) feedbackEl.innerText = "";
+    
+    const isVerified = state.faPractice.cellsVerified[target];
+    const btnGroupEl = document.getElementById('btn-fa-practice-group');
+    if (btnGroupEl) btnGroupEl.classList.toggle('hidden', !isVerified);
+    const btnClearEl = document.getElementById('btn-fa-practice-clear-loops');
+    if (btnClearEl) btnClearEl.classList.toggle('hidden', !isVerified);
+    const btnVerifyEl = document.getElementById('btn-fa-practice-verify-loops');
+    if (btnVerifyEl) btnVerifyEl.classList.toggle('hidden', !isVerified);
+    const eqBoxEl = document.getElementById('fa-practice-kmap-equation-box');
+    if (eqBoxEl) eqBoxEl.classList.toggle('hidden', !isVerified);
+    
+    drawFAPracticeLoops();
+  }
+}
+
+
 // ONLOAD BOOTSTRAPPER
 window.addEventListener('DOMContentLoaded', () => {
   // Initialize module components
@@ -4774,6 +5621,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initRippleCarryModule();
   initBreadboardModule();
   initArcadeModule();
+  initPracticeModules();
   initControls();
 
   // Auto-config database URL if passed via query parameter (e.g. ?db=url)

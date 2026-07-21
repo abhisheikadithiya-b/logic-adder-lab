@@ -652,6 +652,19 @@ body {
   box-shadow: 0 0 6px var(--accent-green);
 }
 
+.nav-item.locked {
+  opacity: 0.35;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.nav-item.locked .nav-status-badge {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
+
 /* Workspace Panels */
 .app-content {
   flex: 1;
@@ -2707,6 +2720,17 @@ body {
   color: var(--text-muted);
 }
 
+.footer-portfolio-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.footer-portfolio-link:hover {
+  color: var(--accent-cyan);
+}
+
+
 .footer-admin-btn {
   background: none;
   border: none;
@@ -3994,3 +4018,70 @@ body {
     }
 
 }
+
+/* Practice Cell Buttons & Custom Toast styling */
+.practice-cell-btn {
+  background: var(--bg-input);
+  color: var(--text-muted);
+  border: 1px dashed var(--border-color);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  cursor: pointer;
+  min-width: 32px;
+  transition: all var(--transition-fast);
+}
+
+.practice-cell-btn:hover {
+  border-color: var(--accent-cyan);
+  color: var(--text-bright);
+}
+
+.practice-cell-btn.filled {
+  background: rgba(0, 240, 255, 0.1);
+  border-style: solid;
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.practice-cell-btn.filled-carry {
+  background: rgba(255, 159, 28, 0.1);
+  border-style: solid;
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
+}
+
+.toast-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.toast {
+  background: var(--bg-card);
+  color: var(--text-bright);
+  border-left: 4px solid var(--accent-cyan);
+  padding: 1rem 1.5rem;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+  pointer-events: auto;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+

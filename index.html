@@ -360,7 +360,7 @@
 
     <!-- Footer with understated Admin access button -->
     <footer class="landing-footer">
-      <span>MADE BY:ABHISHEIK ADITHIYA B &copy; 2026</span>
+      <a href="https://abhisheikadithiyab-portfolio.vercel.app/" target="_blank" class="footer-portfolio-link">Made by abhisheik adithiya</a>
       <button id="btn-footer-admin-login" class="footer-admin-btn">Teacher / Admin Login</button>
     </footer>
   </div>
@@ -591,29 +591,35 @@
         <li class="nav-item-wrapper"><button class="nav-item active" data-target="module-intro" aria-current="page"><div class="nav-indicator"><span class="dot"></span></div>
           <span class="nav-title"><span class="nav-num">01.</span> <span class="nav-text">Binary Carry</span></span>
           <span class="nav-status-badge"></span></button></li>
-        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-half-adder"><div class="nav-indicator"><span class="dot"></span></div>
+        <li class="nav-item-wrapper"><button class="nav-item locked" data-target="module-half-adder"><div class="nav-indicator"><span class="dot"></span></div>
           <span class="nav-title"><span class="nav-num">02.</span> <span class="nav-text">Half Adder Lab</span></span>
           <span class="nav-status-badge"></span></button></li>
-        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-full-adder"><div class="nav-indicator"><span class="dot"></span></div>
+        <li class="nav-item-wrapper"><button class="nav-item locked" data-target="module-full-adder"><div class="nav-indicator"><span class="dot"></span></div>
           <span class="nav-title"><span class="nav-num">03.</span> <span class="nav-text">Full Adder Lab</span></span>
           <span class="nav-status-badge"></span></button></li>
-        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-kmap"><div class="nav-indicator"><span class="dot"></span></div>
+        <li class="nav-item-wrapper"><button class="nav-item locked" data-target="module-kmap"><div class="nav-indicator"><span class="dot"></span></div>
           <span class="nav-title"><span class="nav-num">04.</span> <span class="nav-text">K-Map Lab</span></span>
           <span class="nav-status-badge"></span></button></li>
-        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-sandbox"><div class="nav-indicator"><span class="dot"></span></div>
-          <span class="nav-title"><span class="nav-num">05.</span> <span class="nav-text">Gate Sandbox</span></span>
+        <li class="nav-item-wrapper"><button class="nav-item locked" data-target="module-ripple-carry"><div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">05.</span> <span class="nav-text">Ripple Playground</span></span>
           <span class="nav-status-badge"></span></button></li>
-        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-ripple-carry"><div class="nav-indicator"><span class="dot"></span></div>
-          <span class="nav-title"><span class="nav-num">06.</span> <span class="nav-text">Ripple Playground</span></span>
+        <li class="nav-item-wrapper"><button class="nav-item locked" data-target="module-breadboard"><div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">06.</span> <span class="nav-text">Breadboard/IC</span></span>
           <span class="nav-status-badge"></span></button></li>
-        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-breadboard"><div class="nav-indicator"><span class="dot"></span></div>
-          <span class="nav-title"><span class="nav-num">07.</span> <span class="nav-text">Breadboard/IC</span></span>
+        <li class="nav-item-wrapper"><button class="nav-item locked" data-target="module-ha-practice"><div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">07.</span> <span class="nav-text">HA Practice</span></span>
           <span class="nav-status-badge"></span></button></li>
-        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-arcade"><div class="nav-indicator"><span class="dot"></span></div>
-          <span class="nav-title"><span class="nav-num">08.</span> <span class="nav-text">Logic Arcade</span></span>
+        <li class="nav-item-wrapper"><button class="nav-item locked" data-target="module-fa-practice"><div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">08.</span> <span class="nav-text">FA Practice</span></span>
           <span class="nav-status-badge"></span></button></li>
-        <li class="nav-item-wrapper"><button class="nav-item" data-target="module-mastery"><div class="nav-indicator"><span class="dot"></span></div>
-          <span class="nav-title"><span class="nav-num">09.</span> <span class="nav-text">Mastery Stats</span></span>
+        <li class="nav-item-wrapper"><button class="nav-item locked" data-target="module-sandbox"><div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">09.</span> <span class="nav-text">Gate Sandbox</span></span>
+          <span class="nav-status-badge"></span></button></li>
+        <li class="nav-item-wrapper"><button class="nav-item locked" data-target="module-arcade"><div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">10.</span> <span class="nav-text">Logic Arcade</span></span>
+          <span class="nav-status-badge"></span></button></li>
+        <li class="nav-item-wrapper"><button class="nav-item locked" data-target="module-mastery"><div class="nav-indicator"><span class="dot"></span></div>
+          <span class="nav-title"><span class="nav-num">11.</span> <span class="nav-text">Mastery Stats</span></span>
           <span class="nav-status-badge"></span></button></li>
       </ul>
     </nav>
@@ -1319,108 +1325,9 @@
             </div>
 
             <div class="step-footer mt-auto">
-              <button class="btn primary next-step-btn" data-next="module-sandbox">Proceed to Sandbox Canvas &rarr;</button>
+              <button class="btn primary next-step-btn" data-next="module-ripple-carry">Proceed to Ripple Carry Playground &rarr;</button>
             </div>
           </div>
-        </div>
-      </section>
-
-      <!-- ==================== MODULE 5: BUILD-IT-YOURSELF SANDBOX ==================== -->
-      <section id="module-sandbox" class="lab-section">
-        <div class="section-header">
-          <h2>Module 5: Drag-and-Drop Gate Sandbox</h2>
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-            <button id="btn-sandbox-fullscreen" class="btn primary compact" style="font-size: 0.75rem; padding: 4px 10px;">📱 Fullscreen (Landscape)</button>
-            <span class="module-difficulty">Hands-On Practice</span>
-          </div>
-        </div>
-        <div class="sandbox-grid grid-sidebar-left" style="--sidebar-col-width: 300px;">
-          <!-- Left Panel: Gate Palette & Instructions -->
-          <div class="sandbox-controls">
-            <div class="instructions-panel">
-              <h3>Sandbox Mission</h3>
-              <p id="sandbox-goal-text">Construct a working <strong>Half Adder</strong>! Place gates on the grid and wire inputs to outputs. Complete the truth table to unlock.</p>
-              
-              <div class="mission-selector">
-                <button id="btn-mission-ha" class="tab-btn active">Mission: Half Adder</button>
-                <button id="btn-mission-fa" class="tab-btn">Mission: Full Adder</button>
-              </div>
-            </div>
-
-            <!-- Gate Palette -->
-            <div class="gate-palette-card">
-              <h4>Gate Palette</h4>
-              <p class="hint">Tap a gate to select it, then tap on the canvas to place it. On desktop, drag gates onto the canvas.</p>
-              <div class="palette-gates">
-                <div class="palette-item" draggable="true" data-gate-type="XOR">
-                  <div class="palette-icon xor-icon"></div>
-                  <span>XOR</span>
-                </div>
-                <div class="palette-item" draggable="true" data-gate-type="AND">
-                  <div class="palette-icon and-icon"></div>
-                  <span>AND</span>
-                </div>
-                <div class="palette-item" draggable="true" data-gate-type="OR">
-                  <div class="palette-icon or-icon"></div>
-                  <span>OR</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Quick tools -->
-            <div class="sandbox-tools">
-              <button id="btn-clear-sandbox" class="btn warning">Clear Canvas</button>
-              <button id="btn-delete-selected" class="btn danger disabled" disabled>Delete Selected</button>
-            </div>
-
-            <!-- Live Validation Table -->
-            <div class="live-validation-card">
-              <h4>Auto-Grader Status</h4>
-              <div id="sandbox-validation-progress" class="validation-progress">
-                <div class="val-stat-row">
-                  <span>Logic Equations:</span>
-                  <span id="sandbox-equation-status" class="status-badge error">INCOMPLETE</span>
-                </div>
-                <div class="val-table-status">
-                  <span class="val-headline">Truth Table Coverage:</span>
-                  <div class="mini-grid" id="sandbox-mini-table">
-                    <!-- Dynamic mini squares representing truth table states -->
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Right Column: Canvas Grid -->
-          <div class="sandbox-canvas-container">
-            <div class="canvas-header">
-              <span class="status-indicator" id="canvas-status">Edit Mode - Draw wires by dragging from output pins (circles) to input pins.</span>
-              <span id="canvas-coordinates" class="coord-display">X: 0, Y: 0</span>
-            </div>
-
-            <!-- Grid container where nodes are interactive -->
-            <div class="sandbox-canvas-wrapper">
-              <div class="sandbox-relative-container">
-                <canvas id="sandbox-canvas" width="700" height="480"></canvas>
-                
-
-  
-                <!-- Success Confetti/Overlay -->
-                <div id="sandbox-success-overlay" class="canvas-overlay hidden">
-                  <div class="success-content">
-                    <div class="trophy-pulse">🏆</div>
-                    <h2>Circuit Complete!</h2>
-                    <p id="sandbox-success-msg">Your wiring successfully solves the Half Adder truth table!</p>
-                    <button id="btn-sandbox-success-close" class="btn primary">Continue</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="step-footer mt-4">
-          <button class="btn primary next-step-btn" data-next="module-ripple-carry">Proceed to Ripple Carry Playground &rarr;</button>
         </div>
       </section>
 
@@ -1912,16 +1819,372 @@
             </div>
 
             <div class="step-footer mt-auto">
-              <button class="btn primary next-step-btn" data-next="module-arcade">Proceed to Logic Arcade &rarr;</button>
+              <button class="btn primary next-step-btn" data-next="module-ha-practice">Proceed to HA Practice &rarr;</button>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ==================== MODULE 8: LOGIC ARCADE (PRACTICE) ==================== -->
+      
+      <!-- ==================== MODULE 7: HALF ADDER PRACTICE ==================== -->
+      <section id="module-ha-practice" class="lab-section">
+        <div class="section-header">
+          <h2>Module 7: Half Adder Practice</h2>
+          <span class="module-difficulty">Assessment</span>
+        </div>
+        <div class="split-layout grid-split-main">
+          <!-- Left Column: Truth Table practice -->
+          <div class="card-column data-card">
+            <h3>1. Interactive Truth Table Practice</h3>
+            <p class="description">Fill in the correct output values (SUM and CARRY) for each input combination below.</p>
+            <div class="table-container">
+              <table class="truth-table" id="ha-practice-table">
+                <thead>
+                  <tr>
+                    <th>Input A</th>
+                    <th>Input B</th>
+                    <th>SUM (S)</th>
+                    <th>CARRY (C)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-row="0"><td>0</td><td>0</td>
+                    <td><button class="practice-cell-btn sum-cell" data-inputs="00">?</button></td>
+                    <td><button class="practice-cell-btn carry-cell" data-inputs="00">?</button></td>
+                  </tr>
+                  <tr data-row="1"><td>0</td><td>1</td>
+                    <td><button class="practice-cell-btn sum-cell" data-inputs="01">?</button></td>
+                    <td><button class="practice-cell-btn carry-cell" data-inputs="01">?</button></td>
+                  </tr>
+                  <tr data-row="2"><td>1</td><td>0</td>
+                    <td><button class="practice-cell-btn sum-cell" data-inputs="10">?</button></td>
+                    <td><button class="practice-cell-btn carry-cell" data-inputs="10">?</button></td>
+                  </tr>
+                  <tr data-row="3"><td>1</td><td>1</td>
+                    <td><button class="practice-cell-btn sum-cell" data-inputs="11">?</button></td>
+                    <td><button class="practice-cell-btn carry-cell" data-inputs="11">?</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <button id="btn-ha-practice-verify-table" class="btn primary full-width mt-4">Verify Truth Table</button>
+            <div id="ha-practice-table-feedback" class="feedback-text mt-2"></div>
+          </div>
+
+          <!-- Right Column: K-Map practice -->
+          <div class="card-column logic-diagram-card">
+            <h3>2. K-Map Loop Practice</h3>
+            <p class="description">Fill in the cell values, verify the table matches the K-map, then group cells into loops to simplify the equations.</p>
+            
+            <div class="mission-selector mt-2">
+              <button id="btn-ha-practice-target-sum" class="tab-btn active">SUM Map</button>
+              <button id="btn-ha-practice-target-carry" class="tab-btn">CARRY Map</button>
+            </div>
+
+            <div class="schematic-wrapper kmap-workspace mt-4">
+              <svg id="ha-practice-kmap-svg" class="logic-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 260">
+                <rect width="100%" height="100%" fill="url(#schematic-grid)" />
+                <g transform="translate(60, 20)">
+                  <text id="ha-practice-kmap-title" x="70" y="20" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="var(--accent-cyan)" text-anchor="middle">SUM (S) K-Map</text>
+                  <text x="10" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)">B \ A</text>
+                  <text x="70" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">0</text>
+                  <text x="130" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">1</text>
+                  <text x="25" y="95" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">0</text>
+                  <text x="25" y="155" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">1</text>
+
+                  <!-- Interactive cells -->
+                  <g class="kmap-cell-g practice-kmap-cell-g" data-row="0" data-col="0">
+                    <rect class="kmap-cell-rect" x="40" y="70" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="70" y="105" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g practice-kmap-cell-g" data-row="0" data-col="1">
+                    <rect class="kmap-cell-rect" x="100" y="70" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="130" y="105" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g practice-kmap-cell-g" data-row="1" data-col="0">
+                    <rect class="kmap-cell-rect" x="40" y="130" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="70" y="165" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g practice-kmap-cell-g" data-row="1" data-col="1">
+                    <rect class="kmap-cell-rect" x="100" y="130" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="130" y="165" text-anchor="middle">0</text>
+                  </g>
+
+                  <!-- SVG Loops container -->
+                  <g id="ha-practice-kmap-loops" class="kmap-loops-g"></g>
+                </g>
+              </svg>
+            </div>
+
+            <div id="ha-practice-kmap-equation-box" class="kmap-equation-display mt-4 hidden">
+              <span class="eq-lhs" id="ha-practice-kmap-eq-lhs">SUM (S) = </span>
+              <span class="eq-rhs" id="ha-practice-kmap-eq-rhs">...</span>
+            </div>
+
+            <div class="kmap-controls mt-4">
+              <button id="btn-ha-practice-verify-cells" class="btn primary">Verify K-Map Cells</button>
+              <button id="btn-ha-practice-group" class="btn secondary hidden">Group Selection</button>
+              <button id="btn-ha-practice-clear-loops" class="btn warning hidden">Clear Loops</button>
+              <button id="btn-ha-practice-verify-loops" class="btn primary hidden">Verify Loops</button>
+            </div>
+            <div id="ha-practice-kmap-feedback" class="feedback-text mt-2"></div>
+          </div>
+        </div>
+        <div class="step-footer mt-4">
+          <button class="btn primary next-step-btn" data-next="module-fa-practice">Proceed to FA Practice &rarr;</button>
+        </div>
+      </section>
+
+
+      <!-- ==================== MODULE 8: FULL ADDER PRACTICE ==================== -->
+      <section id="module-fa-practice" class="lab-section">
+        <div class="section-header">
+          <h2>Module 8: Full Adder Practice</h2>
+          <span class="module-difficulty">Assessment</span>
+        </div>
+        <div class="split-layout grid-split-main">
+          <!-- Left Column: Truth Table practice -->
+          <div class="card-column data-card">
+            <h3>1. Interactive Truth Table Practice</h3>
+            <p class="description">Fill in the correct output values (SUM and CARRY) for each of the 8 states.</p>
+            <div class="table-container large-table">
+              <table class="truth-table" id="fa-practice-table">
+                <thead>
+                  <tr>
+                    <th>A</th>
+                    <th>B</th>
+                    <th>C<sub>in</sub></th>
+                    <th>SUM</th>
+                    <th>C<sub>out</sub></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-row="0"><td>0</td><td>0</td><td>0</td>
+                    <td><button class="practice-cell-btn sum-cell" data-inputs="000">?</button></td>
+                    <td><button class="practice-cell-btn carry-cell" data-inputs="000">?</button></td>
+                  </tr>
+                  <tr data-row="1"><td>0</td><td>0</td><td>1</td>
+                    <td><button class="practice-cell-btn sum-cell" data-inputs="001">?</button></td>
+                    <td><button class="practice-cell-btn carry-cell" data-inputs="001">?</button></td>
+                  </tr>
+                  <tr data-row="2"><td>0</td><td>1</td><td>0</td>
+                    <td><button class="practice-cell-btn sum-cell" data-inputs="010">?</button></td>
+                    <td><button class="practice-cell-btn carry-cell" data-inputs="010">?</button></td>
+                  </tr>
+                  <tr data-row="3"><td>0</td><td>1</td><td>1</td>
+                    <td><button class="practice-cell-btn sum-cell" data-inputs="011">?</button></td>
+                    <td><button class="practice-cell-btn carry-cell" data-inputs="011">?</button></td>
+                  </tr>
+                  <tr data-row="4"><td>1</td><td>0</td><td>0</td>
+                    <td><button class="practice-cell-btn sum-cell" data-inputs="100">?</button></td>
+                    <td><button class="practice-cell-btn carry-cell" data-inputs="100">?</button></td>
+                  </tr>
+                  <tr data-row="5"><td>1</td><td>0</td><td>1</td>
+                    <td><button class="practice-cell-btn sum-cell" data-inputs="101">?</button></td>
+                    <td><button class="practice-cell-btn carry-cell" data-inputs="101">?</button></td>
+                  </tr>
+                  <tr data-row="6"><td>1</td><td>1</td><td>0</td>
+                    <td><button class="practice-cell-btn sum-cell" data-inputs="110">?</button></td>
+                    <td><button class="practice-cell-btn carry-cell" data-inputs="110">?</button></td>
+                  </tr>
+                  <tr data-row="7"><td>1</td><td>1</td><td>1</td>
+                    <td><button class="practice-cell-btn sum-cell" data-inputs="111">?</button></td>
+                    <td><button class="practice-cell-btn carry-cell" data-inputs="111">?</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <button id="btn-fa-practice-verify-table" class="btn primary full-width mt-4">Verify Truth Table</button>
+            <div id="fa-practice-table-feedback" class="feedback-text mt-2"></div>
+          </div>
+
+          <!-- Right Column: K-Map practice -->
+          <div class="card-column logic-diagram-card">
+            <h3>2. K-Map Loop Practice</h3>
+            <p class="description">Fill in the cell values, verify the table matches the K-map, then group cells into loops to simplify the equations.</p>
+            
+            <div class="mission-selector mt-2">
+              <button id="btn-fa-practice-target-sum" class="tab-btn active">SUM Map</button>
+              <button id="btn-fa-practice-target-carry" class="tab-btn">CARRY (Cout) Map</button>
+            </div>
+
+            <div class="schematic-wrapper kmap-workspace mt-4">
+              <svg id="fa-practice-kmap-svg" class="logic-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 260">
+                <rect width="100%" height="100%" fill="url(#schematic-grid)" />
+                <g transform="translate(60, 20)">
+                  <text id="fa-practice-kmap-title" x="180" y="20" font-family="JetBrains Mono" font-size="12" font-weight="700" fill="var(--accent-cyan)" text-anchor="middle">SUM K-Map</text>
+                  <text x="10" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)">A \ BCin</text>
+                  <text x="150" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">00</text>
+                  <text x="210" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">01</text>
+                  <text x="270" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">11</text>
+                  <text x="330" y="55" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">10</text>
+                  <text x="65" y="95" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">0</text>
+                  <text x="65" y="155" font-family="JetBrains Mono" font-size="10" fill="var(--text-muted)" text-anchor="middle">1</text>
+
+                  <!-- Interactive cells -->
+                  <!-- Row 0 -->
+                  <g class="kmap-cell-g practice-kmap-cell-g" data-row="0" data-col="0">
+                    <rect class="kmap-cell-rect" x="120" y="70" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="150" y="105" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g practice-kmap-cell-g" data-row="0" data-col="1">
+                    <rect class="kmap-cell-rect" x="180" y="70" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="210" y="105" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g practice-kmap-cell-g" data-row="0" data-col="2">
+                    <rect class="kmap-cell-rect" x="240" y="70" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="270" y="105" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g practice-kmap-cell-g" data-row="0" data-col="3">
+                    <rect class="kmap-cell-rect" x="300" y="70" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="330" y="105" text-anchor="middle">0</text>
+                  </g>
+                  <!-- Row 1 -->
+                  <g class="kmap-cell-g practice-kmap-cell-g" data-row="1" data-col="0">
+                    <rect class="kmap-cell-rect" x="120" y="130" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="150" y="165" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g practice-kmap-cell-g" data-row="1" data-col="1">
+                    <rect class="kmap-cell-rect" x="180" y="130" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="210" y="165" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g practice-kmap-cell-g" data-row="1" data-col="2">
+                    <rect class="kmap-cell-rect" x="240" y="130" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="270" y="165" text-anchor="middle">0</text>
+                  </g>
+                  <g class="kmap-cell-g practice-kmap-cell-g" data-row="1" data-col="3">
+                    <rect class="kmap-cell-rect" x="300" y="130" width="60" height="60" rx="4" />
+                    <text class="kmap-cell-val" x="330" y="165" text-anchor="middle">0</text>
+                  </g>
+
+                  <!-- SVG Loops container -->
+                  <g id="fa-practice-kmap-loops" class="kmap-loops-g"></g>
+                </g>
+              </svg>
+            </div>
+
+            <div id="fa-practice-kmap-equation-box" class="kmap-equation-display mt-4 hidden">
+              <span class="eq-lhs" id="fa-practice-kmap-eq-lhs">SUM = </span>
+              <span class="eq-rhs" id="fa-practice-kmap-eq-rhs">...</span>
+            </div>
+
+            <div class="kmap-controls mt-4">
+              <button id="btn-fa-practice-verify-cells" class="btn primary">Verify K-Map Cells</button>
+              <button id="btn-fa-practice-group" class="btn secondary hidden">Group Selection</button>
+              <button id="btn-fa-practice-clear-loops" class="btn warning hidden">Clear Loops</button>
+              <button id="btn-fa-practice-verify-loops" class="btn primary hidden">Verify Loops</button>
+            </div>
+            <div id="fa-practice-kmap-feedback" class="feedback-text mt-2"></div>
+          </div>
+        </div>
+        <div class="step-footer mt-4">
+          <button class="btn primary next-step-btn" data-next="module-sandbox">Proceed to Gate Sandbox &rarr;</button>
+        </div>
+      </section>
+
+<!-- ==================== MODULE 9: BUILD-IT-YOURSELF SANDBOX ==================== -->
+      <section id="module-sandbox" class="lab-section">
+        <div class="section-header">
+          <h2>Module 9: Drag-and-Drop Gate Sandbox</h2>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button id="btn-sandbox-fullscreen" class="btn primary compact" style="font-size: 0.75rem; padding: 4px 10px;">📱 Fullscreen (Landscape)</button>
+            <span class="module-difficulty">Hands-On Practice</span>
+          </div>
+        </div>
+        <div class="sandbox-grid grid-sidebar-left" style="--sidebar-col-width: 300px;">
+          <!-- Left Panel: Gate Palette & Instructions -->
+          <div class="sandbox-controls">
+            <div class="instructions-panel">
+              <h3>Sandbox Mission</h3>
+              <p id="sandbox-goal-text">Construct a working <strong>Half Adder</strong>! Place gates on the grid and wire inputs to outputs. Complete the truth table to unlock.</p>
+              
+              <div class="mission-selector">
+                <button id="btn-mission-ha" class="tab-btn active">Mission: Half Adder</button>
+                <button id="btn-mission-fa" class="tab-btn">Mission: Full Adder</button>
+              </div>
+            </div>
+
+            <!-- Gate Palette -->
+            <div class="gate-palette-card">
+              <h4>Gate Palette</h4>
+              <p class="hint">Tap a gate to select it, then tap on the canvas to place it. On desktop, drag gates onto the canvas.</p>
+              <div class="palette-gates">
+                <div class="palette-item" draggable="true" data-gate-type="XOR">
+                  <div class="palette-icon xor-icon"></div>
+                  <span>XOR</span>
+                </div>
+                <div class="palette-item" draggable="true" data-gate-type="AND">
+                  <div class="palette-icon and-icon"></div>
+                  <span>AND</span>
+                </div>
+                <div class="palette-item" draggable="true" data-gate-type="OR">
+                  <div class="palette-icon or-icon"></div>
+                  <span>OR</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick tools -->
+            <div class="sandbox-tools">
+              <button id="btn-clear-sandbox" class="btn warning">Clear Canvas</button>
+              <button id="btn-delete-selected" class="btn danger disabled" disabled>Delete Selected</button>
+            </div>
+
+            <!-- Live Validation Table -->
+            <div class="live-validation-card">
+              <h4>Auto-Grader Status</h4>
+              <div id="sandbox-validation-progress" class="validation-progress">
+                <div class="val-stat-row">
+                  <span>Logic Equations:</span>
+                  <span id="sandbox-equation-status" class="status-badge error">INCOMPLETE</span>
+                </div>
+                <div class="val-table-status">
+                  <span class="val-headline">Truth Table Coverage:</span>
+                  <div class="mini-grid" id="sandbox-mini-table">
+                    <!-- Dynamic mini squares representing truth table states -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Canvas Grid -->
+          <div class="sandbox-canvas-container">
+            <div class="canvas-header">
+              <span class="status-indicator" id="canvas-status">Edit Mode - Draw wires by dragging from output pins (circles) to input pins.</span>
+              <span id="canvas-coordinates" class="coord-display">X: 0, Y: 0</span>
+            </div>
+
+            <!-- Grid container where nodes are interactive -->
+            <div class="sandbox-canvas-wrapper">
+              <div class="sandbox-relative-container">
+                <canvas id="sandbox-canvas" width="700" height="480"></canvas>
+                
+
+  
+                <!-- Success Confetti/Overlay -->
+                <div id="sandbox-success-overlay" class="canvas-overlay hidden">
+                  <div class="success-content">
+                    <div class="trophy-pulse">🏆</div>
+                    <h2>Circuit Complete!</h2>
+                    <p id="sandbox-success-msg">Your wiring successfully solves the Half Adder truth table!</p>
+                    <button id="btn-sandbox-success-close" class="btn primary">Continue</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="step-footer mt-4">
+          <button class="btn primary next-step-btn" data-next="module-arcade">Proceed to Ripple Carry Playground &rarr;</button>
+        </div>
+      </section>
+
+      <!-- ==================== MODULE 10: LOGIC ARCADE (PRACTICE) ==================== -->
       <section id="module-arcade" class="lab-section" style="user-select: none;">
         <div class="section-header">
-          <h2>Module 8: Formal Assessment Protocol</h2>
+          <h2>Module 10: Formal Assessment Protocol</h2>
           <span class="module-difficulty font-mono">Exam Mode</span>
         </div>
 
@@ -2126,7 +2389,7 @@
         </div>
       </section>
 
-      <!-- ==================== MODULE 9: MASTERY SUMMARY ==================== -->
+      <!-- ==================== MODULE 11: MASTERY SUMMARY ==================== -->
       <section id="module-mastery" class="lab-section">
         <div class="section-header">
           <h2>Module 9: Mastery Dashboard</h2>
@@ -2168,6 +2431,16 @@
                 <span class="badge-icon">🔌</span>
                 <span class="badge-title">IC Wire Specialist</span>
                 <span class="badge-desc">Toggle physical switches</span>
+              </div>
+              <div class="badge-item locked" id="badge-ha-practice">
+                <span class="badge-icon">📝</span>
+                <span class="badge-title">HA Specialist</span>
+                <span class="badge-desc">Complete HA practice</span>
+              </div>
+              <div class="badge-item locked" id="badge-fa-practice">
+                <span class="badge-icon">🎓</span>
+                <span class="badge-title">FA Specialist</span>
+                <span class="badge-desc">Complete FA practice</span>
               </div>
               <div class="badge-item locked" id="badge-arcade">
                 <span class="badge-icon">🏆</span>
