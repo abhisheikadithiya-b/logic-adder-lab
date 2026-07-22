@@ -4085,3 +4085,44 @@ body {
   to { opacity: 0; }
 }
 
+
+
+/* K-Map Controls & Practice Button Horizontal Layout Fix */
+.kmap-controls {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  margin-top: 1.25rem !important;
+  width: 100% !important;
+}
+
+.kmap-controls .btn {
+  flex: 1 1 auto !important;
+  min-width: 130px !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 8px 16px !important;
+}
+
+.kmap-equation-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-color);
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  color: var(--text-bright);
+}
+
+.kmap-equation-display .eq-rhs {
+  color: var(--accent-cyan);
+}

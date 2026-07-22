@@ -2935,10 +2935,10 @@ function updateKMapEquation() {
   let termsHtml = groups.map(g => `<span class="formula-term">${g.term}</span>`).join(" + ");
   
   if (view === 'ha' && target === 'sum' && groups.length === 2) {
-    termsHtml += ` <span class="formula-term" style="color: var(--accent-amber);">→ A ⊕ B</span>`;
+    termsHtml += ` <span class="formula-term" style="color: var(--accent-amber); font-weight: 700;">= A ⊕ B</span>`;
   }
   if (view === 'fa' && target === 'sum' && groups.length === 4) {
-    termsHtml += ` <span class="formula-term" style="color: var(--accent-amber);">→ A ⊕ B ⊕ Cin</span>`;
+    termsHtml += ` <span class="formula-term" style="color: var(--accent-amber); font-weight: 700;">= A ⊕ B ⊕ Cin</span>`;
   }
 
   document.getElementById('kmap-eq-rhs').innerHTML = termsHtml;
@@ -5152,6 +5152,9 @@ function initPracticeModules() {
     if (eqLhsEl) eqLhsEl.innerHTML = lhs;
     
     let terms = groups.map(g => `<span class="formula-term">${g.term}</span>`).join(" + ");
+    if (target === 'sum' && groups.length === 2) {
+      terms += ` <span class="formula-term" style="color: var(--accent-amber); font-weight: 700;">= A ⊕ B</span>`;
+    }
     if (groups.length === 0) terms = "...";
     const eqRhsEl = document.getElementById('ha-practice-kmap-eq-rhs');
     if (eqRhsEl) eqRhsEl.innerHTML = terms;
@@ -5564,6 +5567,9 @@ function initPracticeModules() {
     if (eqLhsEl) eqLhsEl.innerHTML = lhs;
     
     let terms = groups.map(g => `<span class="formula-term">${g.term}</span>`).join(" + ");
+    if (target === 'sum' && groups.length === 4) {
+      terms += ` <span class="formula-term" style="color: var(--accent-amber); font-weight: 700;">= A ⊕ B ⊕ Cin</span>`;
+    }
     if (groups.length === 0) terms = "...";
     const eqRhsEl = document.getElementById('fa-practice-kmap-eq-rhs');
     if (eqRhsEl) eqRhsEl.innerHTML = terms;
